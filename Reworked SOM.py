@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
 
+import pandas as pd
 import som_class
 
 distance_threshold = 10
@@ -51,8 +52,8 @@ unet = tf.keras.models.load_model("unet_mixedfloat16.h5", compile=False)
 
 
 
-
-#     #####
+#
+#     ##### 
 #     #Get particle positions of every image by U-Net
 
 # for filename in image_files:
@@ -68,15 +69,27 @@ unet = tf.keras.models.load_model("unet_mixedfloat16.h5", compile=False)
 #         np.save(particle_folder + filename.split('/')[1].split('.')[0] + '.npy', particles)
 
 
+#Load background data #!!!
+background_file = 'Background_VM2_AVI_231005_112452/frame_0000.bmp'
+background_data = tf.keras.utils.load_img(background_file, color_mode='grayscale', target_size=None)
+background_data = np.expand_dims(background_data, axis=0)
+background_data = np.expand_dims(background_data, axis=-1) / 255
 
 image_folder = 'VM2_AVI_231005_113723_120pa_1mA/neg/'
 image_files = [os.path.join(image_folder, img) for img in os.listdir(image_folder) if img.endswith(".bmp")]
 image_files.sort()
-particle_folder = 'VM2_AVI_231005_113723_120pa_1mA/neg_positions/'
+
+particle_folder = image_folder[:-1] + '_positions/' #!!! create folder for positions
+if not os.path.exists(particle_folder):
+    os.makedirs(particle_folder)    
+
+
+
 for filename in image_files:
     image_tensor = tf.keras.utils.load_img(filename, color_mode='grayscale', target_size=None)
     image_tensor = np.expand_dims(image_tensor, axis=0)
     image_tensor = np.expand_dims(image_tensor, axis=-1) / 255
+    image_tensor = image_tensor - background_data #!!! background subtract
     unet_result = unet(image_tensor)
     particle_mask = unet_result[0, :, :, 0]>0.99
     particles = np.array(skimage.measure.regionprops(skimage.measure.label(particle_mask)))
@@ -118,8 +131,7 @@ print(str(i)+' particles of '+str(len(coords1))+' matched.')
 
 allmatches = np.array((),dtype=object)
 original_coords = np.array((),dtype=object)
-images_to_match = 5
-particle_folder = 'VM2_AVI_231005_113723_120pa_1mA/neg_positions/'
+images_to_match = 10
 position_files = [os.path.join(particle_folder, img) for img in os.listdir(particle_folder) if img.endswith(".npy")]
 position_files.sort()
 min_length = 5
@@ -145,8 +157,35 @@ dataframe = som.convert_to_dataframe(allmatches,starting_image)
 filtered_particles = som.dataframe_min_length_filter(dataframe,min_length)
 som.plot_traces(filtered_particles)
 
+### filtered particles -> rearrange to ID match -> delta x/y per ID -> plot delta (x)
+
+grouped_df = filtered_particles.sort_values('particle_id')
+
+particle_ids = filtered_particles['particle_id'].unique().astype(int)
+
+eval_df = pd.DataFrame(columns=['avx', 'avy', 'avdxy', 'id'])
+eval_df['id'] = particle_ids
+i = 0
+
+for pid in particle_ids:
+    particle_df = filtered_particles.loc[filtered_particles['particle_id']==pid]
+    particle_df = particle_df.sort_values('frame_number')
+    
+    dx = particle_df['x'].diff()
+    dy = particle_df['y'].diff()
+    dxy = np.sqrt(dx*dx + dy*dy)
+    
+    eval_df.loc[i, 'avx'] = particle_df['x'].mean()
+    eval_df.loc[i, 'avy'] = particle_df['y'].mean()
+    eval_df.loc[i, 'avdxy'] = np.mean(dxy[1:])
+    i = i+1
+    print(i)
 
 
+
+plt.figure(dpi=500)
+plt.plot(eval_df['avx'], eval_df['avdxy'], 'x')
+plt.show()
 
 
 
