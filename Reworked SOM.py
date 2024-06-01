@@ -14,6 +14,7 @@ Created on Tue May 21 16:11:55 2024
 import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
+import scipy
 
 import pandas as pd
 import som_class
@@ -75,7 +76,7 @@ background_data = tf.keras.utils.load_img(background_file, color_mode='grayscale
 background_data = np.expand_dims(background_data, axis=0)
 background_data = np.expand_dims(background_data, axis=-1) / 255
 
-image_folder = 'VM2_AVI_231005_113723_120pa_1mA/neg/'
+image_folder = 'VM2_AVI_231005_121115_060pa_1mA/pos/'
 image_files = [os.path.join(image_folder, img) for img in os.listdir(image_folder) if img.endswith(".bmp")]
 image_files.sort()
 
@@ -131,7 +132,7 @@ print(str(i)+' particles of '+str(len(coords1))+' matched.')
 
 allmatches = np.array((),dtype=object)
 original_coords = np.array((),dtype=object)
-images_to_match = 10
+images_to_match = 5
 position_files = [os.path.join(particle_folder, img) for img in os.listdir(particle_folder) if img.endswith(".npy")]
 position_files.sort()
 min_length = 5
@@ -155,9 +156,11 @@ allmatches = som.tracing(allmatches,original_coords)
 starting_image = int(position_files[0].split('/')[2].split('.')[0].split('_')[1]) #!!! split 1->2 /.split('_')[1])
 dataframe = som.convert_to_dataframe(allmatches,starting_image)
 filtered_particles = som.dataframe_min_length_filter(dataframe,min_length)
-som.plot_traces(filtered_particles)
+#som.plot_traces(filtered_particles)
 
-### filtered particles -> rearrange to ID match -> delta x/y per ID -> plot delta (x)
+
+
+### calculate differences of x/y pos. and average x/y values for each particle id #!!!
 
 grouped_df = filtered_particles.sort_values('particle_id')
 
@@ -170,7 +173,8 @@ i = 0
 for pid in particle_ids:
     particle_df = filtered_particles.loc[filtered_particles['particle_id']==pid]
     particle_df = particle_df.sort_values('frame_number')
-    
+   
+#    if 100 < particle_df['y'].mean() < 400:
     dx = particle_df['x'].diff()
     dy = particle_df['y'].diff()
     dxy = np.sqrt(dx*dx + dy*dy)
@@ -178,15 +182,55 @@ for pid in particle_ids:
     eval_df.loc[i, 'avx'] = particle_df['x'].mean()
     eval_df.loc[i, 'avy'] = particle_df['y'].mean()
     eval_df.loc[i, 'avdxy'] = np.mean(dxy[1:])
+#    print('added %d' %i)
+#    else:
+    #eval_df = eval_df.drop(i)
+#        print('dropped %d' %i)
     i = i+1
-    print(i)
+eval_df = eval_df.astype({'avx':float,'avy':float,'avdxy':float, 'id':int})
 
 
+
+### plots
 
 plt.figure(dpi=500)
-plt.plot(eval_df['avx'], eval_df['avdxy'], 'x')
+plt.plot(eval_df['avx'], eval_df['avdxy'], '.')
+plt.show()
+
+xyz_df = eval_df.sort_values('avx')
+xyz_df['avdxy'] = xyz_df['avdxy']/np.max(xyz_df['avdxy'])
+plt.figure(dpi=500)
+scatter = plt.scatter(xyz_df['avx'], xyz_df['avy'], c=xyz_df['avdxy'],s=20, cmap='inferno')
+plt.colorbar(scatter)
+plt.xlim(0,1600)
+#plt.ylim(100,500)
 plt.show()
 
 
 
+
+# xi = np.linspace(0, 1600, 300)
+# yi = np.linspace(0,600, 300)
+# xgrid, ygrid = np.meshgrid(xi, yi)
+
+# zgrid = scipy.interpolate.griddata((eval_df['avx'].values, eval_df['avy'].values), eval_df['avdxy'].values, (xgrid, ygrid))
+# zgrid[np.isnan(zgrid)] = 0
+# zgrid = zgrid/np.max(zgrid)
+
+# zvmin = np.min(zgrid[zgrid>np.min(zgrid)])
+# plt.figure(dpi=500)
+# imshow = plt.imshow(zgrid, vmin=zvmin, vmax=1, cmap='inferno', interpolation='gaussian')
+# plt.colorbar(imshow)
+# plt.show()
+
+
+# clevels = np.arange(0, 1, 0.1)
+# plt.figure(dpi=500)
+# contour = plt.contourf(xgrid, ygrid, zgrid, clevels, cmap='inferno')
+# plt.show()
+
+#todo
+# v FILTER?
+# 3/5 frames -> eval df -> save?
+# low PA -> low filtered particle number
 
