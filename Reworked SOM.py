@@ -7,7 +7,7 @@ Created on Tue May 21 16:11:55 2024
 
 
 
-
+    #%%
     #####
     #Imports and Initialization
 
@@ -69,14 +69,14 @@ unet = tf.keras.models.load_model("unet_mixedfloat16.h5", compile=False)
 #         particles[:, [0, 1]] = particles[:,[1, 0]]  # correcting, so particles[:,0] is x and particles[:,1] is y
 #         np.save(particle_folder + filename.split('/')[1].split('.')[0] + '.npy', particles)
 
-
+#%%
 #Load background data #!!!
-background_file = 'Background_VM2_AVI_231005_112452/frame_0000.bmp'
+background_file = 'Background_VM2_AVI_231005_115847/frame_0000.bmp'
 background_data = tf.keras.utils.load_img(background_file, color_mode='grayscale', target_size=None)
 background_data = np.expand_dims(background_data, axis=0)
 background_data = np.expand_dims(background_data, axis=-1) / 255
 
-image_folder = 'VM2_AVI_231005_121115_060pa_1mA/pos/'
+image_folder = 'VM2_AVI_231005_121115_060pa_1mA/neg/'
 image_files = [os.path.join(image_folder, img) for img in os.listdir(image_folder) if img.endswith(".bmp")]
 image_files.sort()
 
@@ -107,32 +107,34 @@ plt.show()
 
 
 
-filename1 = particle_folder + image_files[0].split('/')[2].split('.')[0] + '.npy' #!!! split 1->2
-filename2 = particle_folder + image_files[1].split('/')[2].split('.')[0] + '.npy' #!!! split 1->2
-coords1, coords2 = som.read_in_coordinates(filename1, filename2) 
-coords1, coords2 = som.match_2048_images(coords1, coords2)
+# filename1 = particle_folder + image_files[0].split('/')[2].split('.')[0] + '.npy' #!!! split 1->2
+# filename2 = particle_folder + image_files[1].split('/')[2].split('.')[0] + '.npy' #!!! split 1->2
+# coords1, coords2 = som.read_in_coordinates(filename1, filename2) 
+# coords1, coords2 = som.match_2048_images(coords1, coords2)
 
 
-plt.figure(figsize=(35, 35))
-plt.scatter(coords1[:,0],coords1[:,1],c='blue',s=12)
-plt.scatter(coords2[:,0],coords2[:,1],c='red',s=12)
-i = 0
-for particle in coords2:
-    if particle[2] in coords1[:,2]:
-        i+=1
-        coords1_id = np.where(coords1[:,2]==particle[2])[0][0]
-        coords2_id = np.where(coords2[:,2]==particle[2])[0][0]
-        plt.arrow(coords1[coords1_id][0],coords1[coords1_id][1],coords2[coords2_id][0]-coords1[coords1_id][0],coords2[coords2_id][1]-coords1[coords1_id][1], head_width=3)
-plt.gca().invert_yaxis()
-plt.show()
-print(str(i)+' particles of '+str(len(coords1))+' matched.')
+# plt.figure(figsize=(35, 35))
+# plt.scatter(coords1[:,0],coords1[:,1],c='blue',s=12)
+# plt.scatter(coords2[:,0],coords2[:,1],c='red',s=12)
+# i = 0
+# for particle in coords2:
+#     if particle[2] in coords1[:,2]:
+#         i+=1
+#         coords1_id = np.where(coords1[:,2]==particle[2])[0][0]
+#         coords2_id = np.where(coords2[:,2]==particle[2])[0][0]
+#         plt.arrow(coords1[coords1_id][0],coords1[coords1_id][1],coords2[coords2_id][0]-coords1[coords1_id][0],coords2[coords2_id][1]-coords1[coords1_id][1], head_width=3)
+# plt.gca().invert_yaxis()
+# plt.show()
+# print(str(i)+' particles of '+str(len(coords1))+' matched.')
 
+    #%%
     #####
     #Tracing particles over multipe images:
 
 allmatches = np.array((),dtype=object)
 original_coords = np.array((),dtype=object)
-images_to_match = 5
+#images_to_match = 5
+images_to_match = len(os.listdir(particle_folder)) #!!! trace over all images in folder
 position_files = [os.path.join(particle_folder, img) for img in os.listdir(particle_folder) if img.endswith(".npy")]
 position_files.sort()
 min_length = 5
@@ -159,55 +161,85 @@ filtered_particles = som.dataframe_min_length_filter(dataframe,min_length)
 #som.plot_traces(filtered_particles)
 
 
-
+#%%
 ### calculate differences of x/y pos. and average x/y values for each particle id #!!!
 
-grouped_df = filtered_particles.sort_values('particle_id')
+#grouped_df = filtered_particles.sort_values('particle_id')
 
 particle_ids = filtered_particles['particle_id'].unique().astype(int)
 
-eval_df = pd.DataFrame(columns=['avx', 'avy', 'avdxy', 'id'])
-eval_df['id'] = particle_ids
+eval_df = pd.DataFrame(columns=['avx', 'avy', 'avdxy', 'id', 'frame'])
+row_df = pd.DataFrame(columns=['avx', 'avy', 'avdxy', 'id', 'frame'])
+
+frame_calc = 5 #number of frames to calc. v
 i = 0
 
 for pid in particle_ids:
-    particle_df = filtered_particles.loc[filtered_particles['particle_id']==pid]
-    particle_df = particle_df.sort_values('frame_number')
-   
-#    if 100 < particle_df['y'].mean() < 400:
-    dx = particle_df['x'].diff()
-    dy = particle_df['y'].diff()
-    dxy = np.sqrt(dx*dx + dy*dy)
     
-    eval_df.loc[i, 'avx'] = particle_df['x'].mean()
-    eval_df.loc[i, 'avy'] = particle_df['y'].mean()
-    eval_df.loc[i, 'avdxy'] = np.mean(dxy[1:])
-#    print('added %d' %i)
-#    else:
-    #eval_df = eval_df.drop(i)
-#        print('dropped %d' %i)
-    i = i+1
+    pid_df = filtered_particles.loc[filtered_particles['particle_id']==pid]
+    maxframes = len(pid_df['frame_number'])
+    frame_slices = int((maxframes-maxframes%frame_calc)/frame_calc)
+    #print('pid = %d' %pid)
+    
+    for xf in range(frame_slices):
+        slice_df = pid_df.sort_values('frame_number').iloc[(xf*frame_calc):((xf+1)*frame_calc)]
+    #    if 100 < particle_df['y'].mean() < 400:
+        dx = slice_df['x'].diff()
+        dy = slice_df['y'].diff()
+        dxy = np.sqrt(dx**2 + dy**2)
+        
+        # row_df.loc[i, 'id'] = pid
+        # row_df.loc[i, 'avx'] = slice_df['x'].mean()
+        # row_df.loc[i, 'avy'] = slice_df['y'].mean()
+        # row_df.loc[i, 'avdxy'] = np.mean(dxy[1:])
+        # row_df.loc[i, 'frame'] = slice_df['frame_number'].iloc[-1]
+        
+        eval_df.loc[i, 'id'] = pid
+        eval_df.loc[i, 'avx'] = slice_df['x'].mean()
+        eval_df.loc[i, 'avy'] = slice_df['y'].mean()
+        eval_df.loc[i, 'avdxy'] = np.mean(dxy[1:])
+        eval_df.loc[i, 'frame'] = slice_df['frame_number'].iloc[-1]
+    #    print('added %d' %i)
+    #    else:
+        #eval_df = eval_df.drop(i)
+    #        print('dropped %d' %i)
+        i = i+1
 eval_df = eval_df.astype({'avx':float,'avy':float,'avdxy':float, 'id':int})
 
 
-
+#%%
 ### plots
 
-plt.figure(dpi=500)
-plt.plot(eval_df['avx'], eval_df['avdxy'], '.')
-plt.show()
+
 
 xyz_df = eval_df.sort_values('avx')
 xyz_df['avdxy'] = xyz_df['avdxy']/np.max(xyz_df['avdxy'])
+xyz_df = xyz_df.sort_values('frame')
+
 plt.figure(dpi=500)
-scatter = plt.scatter(xyz_df['avx'], xyz_df['avy'], c=xyz_df['avdxy'],s=20, cmap='inferno')
-plt.colorbar(scatter)
-plt.xlim(0,1600)
-#plt.ylim(100,500)
+plt.plot(xyz_df['avx'], xyz_df['avdxy'], '.', markersize=1)
 plt.show()
 
+# for i in range(4):
+#     a = i*50+min(xyz_df['frame'])
+#     b = (i+1)*50+min(xyz_df['frame'])
+#     plt.figure(dpi=500)
+#     scatter = plt.scatter(xyz_df['avx'].loc[(a < xyz_df['frame']) & (xyz_df['frame'] < b)],
+#                           xyz_df['avy'].loc[(a < xyz_df['frame']) & (xyz_df['frame'] < b)],
+#                           c=xyz_df['avdxy'].loc[(a < xyz_df['frame']) & (xyz_df['frame'] < b)],
+#                           s=2, cmap='inferno', vmin=0, vmax=1)
+plt.figure(dpi=500)
+scatter = plt.scatter(xyz_df['avx'], xyz_df['avy'],c=xyz_df['avdxy'], s=2, cmap='inferno', vmin=0, vmax=1)
+plt.colorbar(scatter)
+plt.xlim(0,1600)
+plt.ylim(0,600)
+plt.show()
 
+### save to csv
+eval_df = eval_df.sort_values(['frame', 'id'])
+eval_df.to_csv(image_folder.split('/')[0] + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] +  '.csv')
 
+#test = pd.read_csv(image_folder.split('/')[0] + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] +  '.csv')
 
 # xi = np.linspace(0, 1600, 300)
 # yi = np.linspace(0,600, 300)
@@ -229,8 +261,14 @@ plt.show()
 # contour = plt.contourf(xgrid, ygrid, zgrid, clevels, cmap='inferno')
 # plt.show()
 
+#%%
 #todo
 # v FILTER?
 # 3/5 frames -> eval df -> save?
 # low PA -> low filtered particle number
+# vel. only x ?
+
+# many frames: same particle multiple IDs ?? / cant keep track
+# middle slow ?!
+
 
