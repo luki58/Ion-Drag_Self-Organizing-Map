@@ -207,10 +207,12 @@ for pid in particle_ids:
 eval_df = eval_df.astype({'avx':float,'avy':float,'avdxy':float, 'id':int})
 
 
+### save to csv
+eval_df = eval_df.sort_values(['frame', 'id'])
+eval_df.to_csv(image_folder.split('/')[0] + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] +  '.csv')
+
 #%%
 ### plots
-
-
 
 xyz_df = eval_df.sort_values('avx')
 xyz_df['avdxy'] = xyz_df['avdxy']/np.max(xyz_df['avdxy'])
@@ -235,12 +237,7 @@ plt.xlim(0,1600)
 plt.ylim(0,600)
 plt.show()
 
-### save to csv
-eval_df = eval_df.sort_values(['frame', 'id'])
-eval_df.to_csv(image_folder.split('/')[0] + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] +  '.csv')
-
-#test = pd.read_csv(image_folder.split('/')[0] + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] +  '.csv')
-
+#%% contour plots
 # xi = np.linspace(0, 1600, 300)
 # yi = np.linspace(0,600, 300)
 # xgrid, ygrid = np.meshgrid(xi, yi)
@@ -255,11 +252,11 @@ eval_df.to_csv(image_folder.split('/')[0] + '/' + image_folder.split('/')[0] + '
 # plt.colorbar(imshow)
 # plt.show()
 
-
 # clevels = np.arange(0, 1, 0.1)
 # plt.figure(dpi=500)
 # contour = plt.contourf(xgrid, ygrid, zgrid, clevels, cmap='inferno')
 # plt.show()
+
 
 #%%
 #todo
