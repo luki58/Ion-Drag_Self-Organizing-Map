@@ -11,9 +11,54 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 
-load_filename = 'VM2_AVI_231005_114720_100pa_1mA_neg_filtered_particles'
+#load_filename = 'VM2_AVI_231005_113723_120pa_1mA_neg_filtered_particles'
+#load_filename = 'VM2_AVI_231005_113723_120pa_1mA_neg_filtered_particles_fullBG'
+#load_filename = 'VM2_AVI_231005_113723_120pa_1mA_neg_filtered_particles_noBG'
+
+#load_filename = 'VM2_AVI_231005_113723_120pa_1mA_pos_filtered_particles'
+
+#load_filename = 'VM2_AVI_231005_114720_100pa_1mA_neg_filtered_particles'
+#load_filename = 'VM2_AVI_231005_114720_100pa_1mA_pos_filtered_particles'
+
+#load_filename = 'VM2_AVI_231005_120016_090pa_1mA_pos_filtered_particles'
+
+#load_filename = 'VM2_AVI_231005_120730_070pa_1mA_neg_filtered_particles_fullBG'
+#load_filename = 'VM2_AVI_231005_120730_070pa_1mA_neg_filtered_particles'
+#load_filename = 'VM2_AVI_231005_120730_070pa_1mA_neg_filtered_particles_20BG'
+#load_filename = 'VM2_AVI_231005_120730_070pa_1mA_neg_filtered_particles_50BG'
+#load_filename = 'VM2_AVI_231005_120730_070pa_1mA_neg_filtered_particles_noBG'
+
+load_filename = 'VM2_AVI_231005_121115_060pa_1mA_neg_filtered_particles'
+
+title = 'minus 99% BG'
+
+framerate = 50
+pixelsize = 14.7e-6
 load_csv = 'csv_files_raw'
 filtered_particles = pd.read_csv(load_csv+'/'+load_filename+'.csv')
+
+#%%
+#particle traces
+i=0
+trace_df = filtered_particles
+for ids in trace_df['particle_id']:
+    
+    if i == 0:
+        plt.figure(dpi=500)
+    trace_slice = trace_df.loc[filtered_particles['particle_id']==ids]
+    trace_slice = trace_slice.sort_values('frame_number')
+    plt.plot(trace_slice['x'], trace_slice['y'])
+    plt.xlim(0,1600)
+    plt.ylim(0,600)
+    i+=1
+    
+    #if i==1000:
+    #    plt.xlim(np.min(filtered_particles['x']), np.max(filtered_particles['x']))
+    #    plt.ylim(np.min(filtered_particles['y']), np.max(filtered_particles['y']))
+    #    plt.show()
+    #    plt.clf()
+    #    i=0
+
 
 #%%
 ### calculate differences of x/y pos. and average x/y values for each particle id
@@ -25,7 +70,7 @@ particle_ids = filtered_particles['particle_id'].unique().astype(int)
 eval_df = pd.DataFrame(columns=['avx', 'avy', 'avdxy', 'id', 'frame'])
 row_df = pd.DataFrame(columns=['avx', 'avy', 'avdxy', 'id', 'frame'])
 
-frame_calc = 5 #number of frames to calc. v
+frame_calc = 3 #number of frames to calc. v
 i = 0
 
 for pid in particle_ids:
@@ -40,7 +85,8 @@ for pid in particle_ids:
         
         dx = slice_df['x'].diff()
         dy = slice_df['y'].diff()
-        dxy = np.sqrt(dx**2 + dy**2)
+        dxy = np.sqrt(dx**2 + dy**2)*pixelsize / (framerate*np.abs(slice_df['frame_number'].diff()))
+        #dxy = np.abs(dx)*pixelsize / (50*np.abs(slice_df['frame_number'].diff())) # only vx
         
         eval_df.loc[i, 'id'] = pid
         eval_df.loc[i, 'avx'] = slice_df['x'].mean()
@@ -54,44 +100,52 @@ eval_df = eval_df.astype({'avx':float,'avy':float,'avdxy':float, 'id':int})
 #%%
 # save to csv and json
 
-save_filename = 'VM2_AVI_231005_114720_100pa_1mA_neg'
-folder_csv = 'csv_files'
-folder_json = 'json_files'
+# save_filename = 'VM2_AVI_231005_114720_100pa_1mA_neg'
+# folder_csv = 'csv_files'
+# folder_json = 'json_files'
 
-eval_df = eval_df.sort_values(['frame', 'id'])
-eval_df.to_csv(folder_csv+'/'+save_filename+'.csv')
+# eval_df = eval_df.sort_values(['frame', 'id'])
+# eval_df.to_csv(folder_csv+'/'+save_filename+'.csv')
 
 
-json_file = {
-            'index':eval_df.index.to_list(),
-            'id':eval_df['id'].to_list(),
-            'avx':eval_df['avx'].to_list(),
-            'avy':eval_df['avy'].to_list(),
-            'avdxy':eval_df['avdxy'].to_list(),
-            'frame':eval_df['frame'].to_list(),
-            }
+# json_file = {
+#             'index':eval_df.index.to_list(),
+#             'id':eval_df['id'].to_list(),
+#             'avx':eval_df['avx'].to_list(),
+#             'avy':eval_df['avy'].to_list(),
+#             'avdxy':eval_df['avdxy'].to_list(),
+#             'frame':eval_df['frame'].to_list(),
+#             }
 
-save_file = open(folder_json+'/'+save_filename+'.json','w')
-json.dump(json_file, save_file)
-save_file.close()
+# save_file = open(folder_json+'/'+save_filename+'.json','w')
+# json.dump(json_file, save_file)
+# save_file.close()
 
 
 #%%
 ### plots
 
 xyz_df = eval_df.sort_values('avx')
-xyz_df['avdxy'] = xyz_df['avdxy']/np.max(xyz_df['avdxy'])
+#xyz_df['avdxy'] = xyz_df['avdxy']/np.max(xyz_df['avdxy'])
 xyz_df = xyz_df.sort_values('frame')
 
 plt.figure(dpi=500)
 plt.plot(xyz_df['avx'], xyz_df['avdxy'], '.', markersize=1)
+#vel_av = np.average(xyz_df['avdxy'])
+#plt.ylim(vel_av*0.5, vel_av*1.5)
+plt.ylabel('Velocity [m/s]')
+plt.xlabel('x [px]')
+plt.title(title)
 plt.show()
 
 plt.figure(dpi=500)
-scatter = plt.scatter(xyz_df['avx'], xyz_df['avy'],c=xyz_df['avdxy'], s=2, cmap='inferno', vmin=0, vmax=1)
+scatter = plt.scatter(xyz_df['avx'], xyz_df['avy'],c=xyz_df['avdxy'], s=2, cmap='inferno', vmin=0, vmax=np.max(xyz_df['avdxy']))
 plt.colorbar(scatter)
 plt.xlim(0,1600)
 plt.ylim(0,600)
+plt.ylabel('y [px]')
+plt.xlabel('x [px]')
+plt.title(title)
 plt.show()
 
 #%%

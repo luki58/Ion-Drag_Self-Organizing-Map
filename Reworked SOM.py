@@ -39,43 +39,30 @@ import skimage.io
 unet = tf.keras.models.load_model("unet_mixedfloat16.h5", compile=False)
 
 
-
 #%%
-#     #####
-#     #Set folders and scan for images
-
-# image_folder = 'VM2_AVI_231005_113723_120pa_1mA/neg/'
-# image_files = [os.path.join(image_folder, img) for img in os.listdir(image_folder) if img.endswith(".bmp")]
-# image_files.sort()
-# particle_folder = 'VM2_AVI_231005_113723_120pa_1mA/neg_positions/'
+#Set directory/files of particle images and background #!!!
 
 
+#background_file = 'Background_VM2_AVI_231005_112452/frame_0000.bmp'
 
-#
-#     ##### 
-#     #Get particle positions of every image by U-Net
+#image_folder = 'VM2_AVI_231005_113723_120pa_1mA/neg/'
+#image_folder = 'VM2_AVI_231005_113723_120pa_1mA/pos/'
+#image_folder = 'VM2_AVI_231005_114720_100pa_1mA/neg/'
+#image_folder = 'VM2_AVI_231005_114720_100pa_1mA/pos/'
 
-# for filename in image_files:
-#     image_tensor = tf.keras.utils.load_img(filename, color_mode='grayscale', target_size=None)
-#     image_tensor = np.expand_dims(image_tensor, axis=0)
-#     image_tensor = np.expand_dims(image_tensor, axis=-1) / 255
-#     unet_result = unet(image_tensor)
-#     particle_mask = unet_result[0, :, :, 0]>0.99
-#     particles = np.array(skimage.measure.regionprops(skimage.measure.label(particle_mask)))
-#     if len(particles) > 0:
-#         particles = np.array([c["Centroid"] for c in particles])
-#         particles[:, [0, 1]] = particles[:,[1, 0]]  # correcting, so particles[:,0] is x and particles[:,1] is y
-#         np.save(particle_folder + filename.split('/')[1].split('.')[0] + '.npy', particles)
-
-
-#%%
-#Load background data #!!!
 background_file = 'Background_VM2_AVI_231005_115847/frame_0000.bmp'
+
+#image_folder = 'VM2_AVI_231005_120016_090pa_1mA/neg/'
+#image_folder = 'VM2_AVI_231005_120016_090pa_1mA/pos/'
+#image_folder = 'VM2_AVI_231005_120730_070pa_1mA/neg/'
+#image_folder = 'VM2_AVI_231005_120730_070pa_1mA/pos/'
+#image_folder = 'VM2_AVI_231005_121115_060pa_1mA/neg/'
+image_folder = 'VM2_AVI_231005_121115_060pa_1mA/pos/'
+
 background_data = tf.keras.utils.load_img(background_file, color_mode='grayscale', target_size=None)
 background_data = np.expand_dims(background_data, axis=0)
 background_data = np.expand_dims(background_data, axis=-1) / 255
 
-image_folder = 'VM2_AVI_231005_121115_060pa_1mA/neg/'
 image_files = [os.path.join(image_folder, img) for img in os.listdir(image_folder) if img.endswith(".bmp")]
 image_files.sort()
 
@@ -89,7 +76,7 @@ for filename in image_files:
     image_tensor = tf.keras.utils.load_img(filename, color_mode='grayscale', target_size=None)
     image_tensor = np.expand_dims(image_tensor, axis=0)
     image_tensor = np.expand_dims(image_tensor, axis=-1) / 255
-    image_tensor = image_tensor - (background_data*0.99) #!!! background subtract / 0.99
+    image_tensor = image_tensor - (background_data)*0.99 #!!! background subtract / 0.99
     unet_result = unet(image_tensor)
     particle_mask = unet_result[0, :, :, 0]>0.99
     particles = np.array(skimage.measure.regionprops(skimage.measure.label(particle_mask)))
@@ -161,10 +148,9 @@ filtered_particles = som.dataframe_min_length_filter(dataframe,min_length)
 #som.plot_traces(filtered_particles)
 
 ### save to csv
-save_filename = 'VM2_AVI_231005_114720_100pa_1mA_neg_filtered_particles'
 folder_csv = 'csv_files_raw'
 
-save_filtered = filtered_particles.sort_values(['frame', 'id'])
-save_filtered.to_csv(image_folder.split('/')[0] + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] +'_filtered_particles'+  '.csv')
+save_filtered = filtered_particles.sort_values(['frame_number', 'particle_id'])
+save_filtered.to_csv(folder_csv + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] +'_filtered_particles'+  '.csv')
 
 
