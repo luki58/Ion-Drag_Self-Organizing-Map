@@ -8,11 +8,15 @@ Created on Thu Jun 13 18:58:37 2024
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import json
 
-filename = 'VM2_AVI_231005_114720_100pa_1mA_neg'
-folder = 'csv_files'
-eval_df = pd.read_csv(folder + '/' + filename + '.csv')
+load_filename = 'VM2_AVI_231005_114720_100pa_1mA_neg'
+folder_csv = 'csv_files'
 
+#%%
+
+### load csv
+eval_df = pd.read_csv(folder_csv+'/'+load_filename+'.csv')
 
 xyz_df = eval_df.sort_values('avx')
 xyz_df['avdxy'] = xyz_df['avdxy']/np.max(xyz_df['avdxy'])
@@ -58,6 +62,26 @@ plt.xlim(0, 1600)
 plt.ylim(0, 600)
 plt.show()
 
+
+#%% contour plots
+# xi = np.linspace(0, 1600, 300)
+# yi = np.linspace(0,600, 300)
+# xgrid, ygrid = np.meshgrid(xi, yi)
+
+# zgrid = scipy.interpolate.griddata((eval_df['avx'].values, eval_df['avy'].values), eval_df['avdxy'].values, (xgrid, ygrid))
+# zgrid[np.isnan(zgrid)] = 0
+# zgrid = zgrid/np.max(zgrid)
+
+# zvmin = np.min(zgrid[zgrid>np.min(zgrid)])
+# plt.figure(dpi=500)
+# imshow = plt.imshow(zgrid, vmin=zvmin, vmax=1, cmap='inferno', interpolation='gaussian')
+# plt.colorbar(imshow)
+# plt.show()
+
+# clevels = np.arange(0, 1, 0.1)
+# plt.figure(dpi=500)
+# contour = plt.contourf(xgrid, ygrid, zgrid, clevels, cmap='inferno')
+# plt.show()
 
 
 
