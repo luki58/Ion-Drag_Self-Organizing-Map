@@ -15,75 +15,16 @@ folder_csv = 'csv_files'
 
 #%%
 
-### load csv
-eval_df = pd.read_csv(folder_csv+'/'+load_filename+'.csv')
-
-xyz_df = eval_df.sort_values('avx')
-xyz_df['avdxy'] = xyz_df['avdxy']/np.max(xyz_df['avdxy'])
-xyz_df = xyz_df.sort_values('frame')
-
-
-
-fwindow = 10
-framecount = len(eval_df['frame'].unique().astype(int))
-uframes = np.arange(0, framecount, fwindow)
-
-for i in uframes:
-     a = i+min(xyz_df['frame'])
-     b = (i+fwindow)+min(xyz_df['frame'])
-     
-     plt.figure(dpi=500)
-     plt.plot(xyz_df['avx'], xyz_df['avdxy'], '.', markersize=1)
-     plt.xlim(0, 1600)
-     plt.ylim(0, 1)
-     plt.title('Frames %d-%d' %(a, b))
-     plt.show()
-     
-     plt.figure(dpi=500)
-     scatter = plt.scatter(xyz_df['avx'].loc[(a < xyz_df['frame']) & (xyz_df['frame'] < b)],
-                           xyz_df['avy'].loc[(a < xyz_df['frame']) & (xyz_df['frame'] < b)],
-                           c=xyz_df['avdxy'].loc[(a < xyz_df['frame']) & (xyz_df['frame'] < b)],
-                           s=2, cmap='inferno', vmin=0, vmax=1)
-     plt.colorbar(scatter)
-     plt.xlim(0, 1600)
-     plt.ylim(0, 600)
-     plt.title('Frames %d-%d' %(a, b))
-     plt.show()
-
+pressure = np.array([120, 120, 100, 100, 90, 90, 70, 70, 60, 60])
+error    = np.array([6.9919, 3.9419, 8.3686, 5.1514, 8.5119, 6.5791, 11.3347, 10.5353, 15.0162, 10.8872])
+mean_v   = np.array([0.007617, 0.003777, 0.016163, 0.008016, 0.040292, 0.037159, 0.031784, 0.050557, 0.260084, 0.116349])
 
 plt.figure(dpi=500)
-plt.plot(xyz_df['avx'], xyz_df['avdxy'], '.', markersize=1)
+plt.plot(pressure, mean_v, 'x')
+plt.plot(pressure, mean_v, '--')
+plt.xlabel('pressure [Pa]')
+plt.ylabel('mean velocity [mm/s]')
 plt.show()
-
-plt.figure(dpi=500)
-scatter = plt.scatter(xyz_df['avx'], xyz_df['avy'],c=xyz_df['avdxy'], s=2, cmap='inferno', vmin=0, vmax=1)
-plt.colorbar(scatter)
-plt.xlim(0, 1600)
-plt.ylim(0, 600)
-plt.show()
-
-
-#%% contour plots
-# xi = np.linspace(0, 1600, 300)
-# yi = np.linspace(0,600, 300)
-# xgrid, ygrid = np.meshgrid(xi, yi)
-
-# zgrid = scipy.interpolate.griddata((eval_df['avx'].values, eval_df['avy'].values), eval_df['avdxy'].values, (xgrid, ygrid))
-# zgrid[np.isnan(zgrid)] = 0
-# zgrid = zgrid/np.max(zgrid)
-
-# zvmin = np.min(zgrid[zgrid>np.min(zgrid)])
-# plt.figure(dpi=500)
-# imshow = plt.imshow(zgrid, vmin=zvmin, vmax=1, cmap='inferno', interpolation='gaussian')
-# plt.colorbar(imshow)
-# plt.show()
-
-# clevels = np.arange(0, 1, 0.1)
-# plt.figure(dpi=500)
-# contour = plt.contourf(xgrid, ygrid, zgrid, clevels, cmap='inferno')
-# plt.show()
-
-
 
 
 

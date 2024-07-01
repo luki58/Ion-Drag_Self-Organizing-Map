@@ -10,29 +10,32 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import json
+import scipy.stats as scistat
 
+#120pa
 #load_filename = 'VM2_AVI_231005_113723_120pa_1mA_neg_filtered_particles'
-#load_filename = 'VM2_AVI_231005_113723_120pa_1mA_neg_filtered_particles_fullBG'
-#load_filename = 'VM2_AVI_231005_113723_120pa_1mA_neg_filtered_particles_noBG'
-
 #load_filename = 'VM2_AVI_231005_113723_120pa_1mA_pos_filtered_particles'
 
+#100pa
 #load_filename = 'VM2_AVI_231005_114720_100pa_1mA_neg_filtered_particles'
 #load_filename = 'VM2_AVI_231005_114720_100pa_1mA_pos_filtered_particles'
 
+#90pa
+#load_filename = 'VM2_AVI_231005_120016_090pa_1mA_neg_filtered_particles'
 #load_filename = 'VM2_AVI_231005_120016_090pa_1mA_pos_filtered_particles'
 
-#load_filename = 'VM2_AVI_231005_120730_070pa_1mA_neg_filtered_particles_fullBG'
+#70pa
 #load_filename = 'VM2_AVI_231005_120730_070pa_1mA_neg_filtered_particles'
-#load_filename = 'VM2_AVI_231005_120730_070pa_1mA_neg_filtered_particles_20BG'
-#load_filename = 'VM2_AVI_231005_120730_070pa_1mA_neg_filtered_particles_50BG'
-#load_filename = 'VM2_AVI_231005_120730_070pa_1mA_neg_filtered_particles_noBG'
+#load_filename = 'VM2_AVI_231005_120730_070pa_1mA_pos_filtered_particles'
 
-load_filename = 'VM2_AVI_231005_121115_060pa_1mA_neg_filtered_particles'
+#60pa
+#load_filename = 'VM2_AVI_231005_121115_060pa_1mA_neg_filtered_particles'
+load_filename = 'VM2_AVI_231005_121115_060pa_1mA_pos_filtered_particles'
 
-title = 'minus 99% BG'
 
-framerate = 50
+title = load_filename.split('_')[4] +  ' / ' + load_filename.split('_')[6] 
+
+framerate = 1/50
 pixelsize = 14.7e-6
 load_csv = 'csv_files_raw'
 filtered_particles = pd.read_csv(load_csv+'/'+load_filename+'.csv')
@@ -50,6 +53,7 @@ for ids in trace_df['particle_id']:
     plt.plot(trace_slice['x'], trace_slice['y'])
     plt.xlim(0,1600)
     plt.ylim(0,600)
+    plt.title(title)
     i+=1
     
     #if i==1000:
@@ -85,7 +89,7 @@ for pid in particle_ids:
         
         dx = slice_df['x'].diff()
         dy = slice_df['y'].diff()
-        dxy = np.sqrt(dx**2 + dy**2)*pixelsize / (framerate*np.abs(slice_df['frame_number'].diff()))
+        dxy = 1000*np.sqrt(dx**2 + dy**2)*pixelsize / (framerate*np.abs(slice_df['frame_number'].diff())) #m/s -> mm/s
         #dxy = np.abs(dx)*pixelsize / (50*np.abs(slice_df['frame_number'].diff())) # only vx
         
         eval_df.loc[i, 'id'] = pid
@@ -98,16 +102,17 @@ for pid in particle_ids:
 eval_df = eval_df.astype({'avx':float,'avy':float,'avdxy':float, 'id':int})
 
 #%%
-# save to csv and json
+## save to csv
 
-# save_filename = 'VM2_AVI_231005_114720_100pa_1mA_neg'
-# folder_csv = 'csv_files'
+save_filename = load_filename.split('_filtered_particles')[0]
+folder_csv = 'csv_files'
+
+eval_df = eval_df.sort_values(['frame', 'id'])
+eval_df.to_csv(folder_csv+'/'+save_filename+'.csv')
+
+## save to json
+
 # folder_json = 'json_files'
-
-# eval_df = eval_df.sort_values(['frame', 'id'])
-# eval_df.to_csv(folder_csv+'/'+save_filename+'.csv')
-
-
 # json_file = {
 #             'index':eval_df.index.to_list(),
 #             'id':eval_df['id'].to_list(),
@@ -131,15 +136,15 @@ xyz_df = xyz_df.sort_values('frame')
 
 plt.figure(dpi=500)
 plt.plot(xyz_df['avx'], xyz_df['avdxy'], '.', markersize=1)
-#vel_av = np.average(xyz_df['avdxy'])
-#plt.ylim(vel_av*0.5, vel_av*1.5)
-plt.ylabel('Velocity [m/s]')
+vel_av = np.average(xyz_df['avdxy'])
+plt.ylim(0, vel_av*2)
+plt.ylabel('Velocity [mm/s]')
 plt.xlabel('x [px]')
 plt.title(title)
 plt.show()
 
 plt.figure(dpi=500)
-scatter = plt.scatter(xyz_df['avx'], xyz_df['avy'],c=xyz_df['avdxy'], s=2, cmap='inferno', vmin=0, vmax=np.max(xyz_df['avdxy']))
+scatter = plt.scatter(xyz_df['avx'], xyz_df['avy'],c=xyz_df['avdxy'], s=2, cmap='inferno', vmin=0, vmax=np.mean(xyz_df['avdxy'])*2)
 plt.colorbar(scatter)
 plt.xlim(0,1600)
 plt.ylim(0,600)
@@ -148,11 +153,21 @@ plt.xlabel('x [px]')
 plt.title(title)
 plt.show()
 
-#%%
-#todo
+vel_mean = np.mean(xyz_df['avdxy'])
+vel_round = xyz_df['avdxy'].round(2)
+counts = vel_round.value_counts()
+v_error = scistat.mstats.sem(np.array(eval_df['avdxy']))
 
-#pixel/fps values
-#x / x+y compare
-# pos/neg compare
+plt.figure(dpi=500)
+plt.bar(counts.index, height=counts, width=5e-2)
+plt.xlim(0, vel_mean*2)
+plt.xlabel('v[mm/s]')
+plt.ylabel('count')
+plt.title(title)
+plt.suptitle('mean=%.4f | error=%.6f [mm/s]'%(vel_mean,v_error))
+plt.show()
+
+
+
 
 
