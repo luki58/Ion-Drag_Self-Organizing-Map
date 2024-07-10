@@ -17,6 +17,7 @@ import numpy as np
 
 import pandas as pd
 import som_class
+import json
 
 distance_threshold = 10
 alpha = 0.048
@@ -79,53 +80,25 @@ particle_folder = image_folder[:-1] + '_positions/' #create folder for positions
 if not os.path.exists(particle_folder):
     os.makedirs(particle_folder)    
 
-
-
-for filename in image_files:
-    image_tensor = tf.keras.utils.load_img(filename, color_mode='grayscale', target_size=None)
-    image_tensor = np.expand_dims(image_tensor, axis=0)
-    image_tensor = np.expand_dims(image_tensor, axis=-1) / 255
-    image_tensor = image_tensor - (background_data)*0.95 #!!! background subtract
-    unet_result = unet(image_tensor)
-    particle_mask = unet_result[0, :, :, 0]>0.99
-    particles = np.array(skimage.measure.regionprops(skimage.measure.label(particle_mask)))
-    if len(particles) > 0:
-        particles = np.array([c["Centroid"] for c in particles])
-        particles[:, [0, 1]] = particles[:,[1, 0]]  # correcting, so particles[:,0] is x and particles[:,1] is y
-        np.save(particle_folder + filename.split('/')[2].split('.')[0] + '.npy', particles)
-img = np.array(Image.open(image_files[0]))/255
-particles_to_show = np.load(particle_folder + image_files[0].split('/')[2].split('.')[0] + '.npy')
-#plt.figure(figsize=(10, 10))
-#plt.imshow(img, cmap="gray")
-#plt.scatter(particles_to_show[:, 0], particles_to_show[:, 1], facecolors='None',edgecolors='blue')
-#plt.show()
-
+    for filename in image_files:
+        image_tensor = tf.keras.utils.load_img(filename, color_mode='grayscale', target_size=None)
+        image_tensor = np.expand_dims(image_tensor, axis=0)
+        image_tensor = np.expand_dims(image_tensor, axis=-1) / 255
+        image_tensor = image_tensor - (background_data)*0.95 #!!! background subtract
+        unet_result = unet(image_tensor)
+        particle_mask = unet_result[0, :, :, 0]>0.99
+        particles = np.array(skimage.measure.regionprops(skimage.measure.label(particle_mask)))
+        if len(particles) > 0:
+            particles = np.array([c["Centroid"] for c in particles])
+            particles[:, [0, 1]] = particles[:,[1, 0]]  # correcting, so particles[:,0] is x and particles[:,1] is y
+            np.save(particle_folder + filename.split('/')[2].split('.')[0] + '.npy', particles)
+    img = np.array(Image.open(image_files[0]))/255
+    particles_to_show = np.load(particle_folder + image_files[0].split('/')[2].split('.')[0] + '.npy')
+    
 
 #%%
-# filename1 = particle_folder + image_files[0].split('/')[2].split('.')[0] + '.npy'
-# filename2 = particle_folder + image_files[1].split('/')[2].split('.')[0] + '.npy'
-# coords1, coords2 = som.read_in_coordinates(filename1, filename2) 
-# coords1, coords2 = som.match_2048_images(coords1, coords2)
-
-
-# plt.figure(figsize=(35, 35))
-# plt.scatter(coords1[:,0],coords1[:,1],c='blue',s=12)
-# plt.scatter(coords2[:,0],coords2[:,1],c='red',s=12)
-# i = 0
-# for particle in coords2:
-#     if particle[2] in coords1[:,2]:
-#         i+=1
-#         coords1_id = np.where(coords1[:,2]==particle[2])[0][0]
-#         coords2_id = np.where(coords2[:,2]==particle[2])[0][0]
-#         plt.arrow(coords1[coords1_id][0],coords1[coords1_id][1],coords2[coords2_id][0]-coords1[coords1_id][0],coords2[coords2_id][1]-coords1[coords1_id][1], head_width=3)
-# plt.gca().invert_yaxis()
-# plt.show()
-# print(str(i)+' particles of '+str(len(coords1))+' matched.')
-
-
-    #%%
-    #####
-    #Tracing particles over multipe images:
+#####
+# Tracing particles over multipe images:
 
 available_images = len(os.listdir(particle_folder)) #trace over all images in folder
 
@@ -157,8 +130,8 @@ starting_image = int(position_files[0].split('/')[2].split('.')[0].split('_')[1]
 dataframe = som.convert_to_dataframe(allmatches,starting_image)
 filtered_particles = som.dataframe_min_length_filter(dataframe,min_length)
 
-#particle traces
 
+# particle traces
 trace_df = filtered_particles
 
 plt.figure(dpi=500)
@@ -174,7 +147,7 @@ plt.show()
 #som.plot_traces(filtered_particles)
 
 #%%
-
+# calculation velocity and positions
 
 framerate = 1/50
 pixelsize = 14.7e-6
@@ -183,7 +156,6 @@ pixelsize = 14.7e-6
 particle_ids = filtered_particles['particle_id'].unique().astype(int)
 
 eval_df = pd.DataFrame(columns=['avx', 'avy', 'avdxy', 'id', 'frame'])
-row_df = pd.DataFrame(columns=['avx', 'avy', 'avdxy', 'id', 'frame'])
 
 frame_calc = 3 #number of frames to calc. v
 i = 0
@@ -201,7 +173,6 @@ for pid in particle_ids:
         dx = slice_df['x'].diff()
         dy = slice_df['y'].diff()
         dxy = np.sqrt(dx**2 + dy**2)*pixelsize / (framerate*np.abs(slice_df['frame_number'].diff()))
-        #dxy = np.abs(dx)*pixelsize / (50*np.abs(slice_df['frame_number'].diff())) # only vx
         
         eval_df.loc[i, 'id'] = pid
         eval_df.loc[i, 'avx'] = slice_df['x'].mean()
@@ -212,6 +183,8 @@ for pid in particle_ids:
         i = i+1
 eval_df = eval_df.astype({'avx':float,'avy':float,'avdxy':float, 'id':int})
 
+#%%
+# plots
 
 xyz_df = eval_df.sort_values('avx')
 #xyz_df['avdxy'] = xyz_df['avdxy']/np.max(xyz_df['avdxy'])
@@ -239,17 +212,31 @@ plt.show()
 
 
 
-### save to csv
-folder_csv = 'csv_files_raw'
+### save to json
+#raw/filtered particles
+folder_json_raw = 'json_files_raw'
 
-save_filtered = filtered_particles.sort_values(['frame_number', 'particle_id'])
-save_filtered.to_csv(folder_csv + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] +'_filtered_particles'+  '.csv')
+json_raw = filtered_particles.to_json()
+json_raw = json.loads(json_raw)
 
+save_file = open(folder_json_raw + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] +'_filtered_particles'+  +'.json','w')
+json.dump(json_raw, save_file)
+save_file.close()
 
+#calcs.
+folder_json = 'json_files'
+
+json_calc = eval_df.to_json()
+json_calc = json.loads(json_calc)
+
+save_file = open(folder_json + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] +'_filtered_particles'+  +'.json','w')
+json.dump(json_calc, save_file)
+save_file.close()
 
 #%%
 #todo
 
-# pos/neg compare
-# good params?
-# av vel per dataset  -> curve ?
+# good params? -> bayesian opt
+# s
+
+

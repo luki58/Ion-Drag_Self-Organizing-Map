@@ -37,8 +37,9 @@ title = load_filename.split('_')[4] +  ' / ' + load_filename.split('_')[6]
 
 framerate = 1/50
 pixelsize = 14.7e-6
-load_csv = 'csv_files_raw'
-filtered_particles = pd.read_csv(load_csv+'/'+load_filename+'.csv')
+
+load_json = 'json_files_raw'
+filtered_particles = pd.read_json(load_json + '/' + load_filename + '.json')
 
 #%%
 #particle traces
@@ -72,7 +73,6 @@ for ids in trace_df['particle_id']:
 particle_ids = filtered_particles['particle_id'].unique().astype(int)
 
 eval_df = pd.DataFrame(columns=['avx', 'avy', 'avdxy', 'id', 'frame'])
-row_df = pd.DataFrame(columns=['avx', 'avy', 'avdxy', 'id', 'frame'])
 
 frame_calc = 3 #number of frames to calc. v
 i = 0
@@ -100,32 +100,6 @@ for pid in particle_ids:
 
         i = i+1
 eval_df = eval_df.astype({'avx':float,'avy':float,'avdxy':float, 'id':int})
-
-#%%
-## save to csv
-
-save_filename = load_filename.split('_filtered_particles')[0]
-folder_csv = 'csv_files'
-
-eval_df = eval_df.sort_values(['frame', 'id'])
-eval_df.to_csv(folder_csv+'/'+save_filename+'.csv')
-
-## save to json
-
-# folder_json = 'json_files'
-# json_file = {
-#             'index':eval_df.index.to_list(),
-#             'id':eval_df['id'].to_list(),
-#             'avx':eval_df['avx'].to_list(),
-#             'avy':eval_df['avy'].to_list(),
-#             'avdxy':eval_df['avdxy'].to_list(),
-#             'frame':eval_df['frame'].to_list(),
-#             }
-
-# save_file = open(folder_json+'/'+save_filename+'.json','w')
-# json.dump(json_file, save_file)
-# save_file.close()
-
 
 #%%
 ### plots
