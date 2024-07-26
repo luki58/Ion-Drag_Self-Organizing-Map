@@ -25,12 +25,12 @@ import scipy.stats as scistat
 #load_filename = 'VM2_AVI_231005_120016_090pa_1mA_pos_filtered_particles'
 
 #70pa
-#load_filename = 'VM2_AVI_231005_120730_070pa_1mA_neg_filtered_particles'
+load_filename = 'VM2_AVI_231005_120730_070pa_1mA_neg_filtered_particles'
 #load_filename = 'VM2_AVI_231005_120730_070pa_1mA_pos_filtered_particles'
 
 #60pa
 #load_filename = 'VM2_AVI_231005_121115_060pa_1mA_neg_filtered_particles'
-load_filename = 'VM2_AVI_231005_121115_060pa_1mA_pos_filtered_particles'
+#load_filename = 'VM2_AVI_231005_121115_060pa_1mA_pos_filtered_particles'
 
 
 title = load_filename.split('_')[4] +  ' / ' + load_filename.split('_')[6] 
@@ -38,8 +38,9 @@ title = load_filename.split('_')[4] +  ' / ' + load_filename.split('_')[6]
 framerate = 1/50
 pixelsize = 14.7e-6
 
-load_json = 'json_files_raw'
-filtered_particles = pd.read_json(load_json + '/' + load_filename + '.json')
+load_folder = 'json_files_opt'
+
+filtered_particles = pd.read_json(load_folder + '/' + load_filename + '.json')
 
 #%%
 #particle traces
@@ -140,6 +141,24 @@ plt.ylabel('count')
 plt.title(title)
 plt.suptitle('mean=%.4f | error=%.6f [mm/s]'%(vel_mean,v_error))
 plt.show()
+
+most_particles_frame = filtered_particles['frame_number'].value_counts().index[0]
+fp_slice = filtered_particles.loc[filtered_particles['frame_number']==most_particles_frame]
+
+plt.figure(dpi=500)
+plt.plot(fp_slice['x'],fp_slice['y'],'x')
+plt.xlim(0,1600)
+plt.ylim(0,600)
+plt.show()
+
+# folder_json_raw = 'coordinate_data'
+
+# json_raw = fp_slice.to_json()
+# json_raw = json.loads(json_raw)
+
+# save_file = open(folder_json_raw + '/' + '_'.join(load_filename.split('_')[:-2]) + '_coords' +'.json','w')
+# json.dump(json_raw, save_file)
+# save_file.close()
 
 
 

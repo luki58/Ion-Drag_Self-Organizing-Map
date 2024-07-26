@@ -20,12 +20,16 @@ import som_class
 import json
 
 distance_threshold = 10
-alpha = 0.048
+alpha = 0.04
 startradius = 100
 endradius = 1
-iterations = 50
+iterations = 40
 epsilon = 4
 
+framerate = 1/50
+pixelsize = 14.7e-6
+
+save = 0
 
 #distance_threshold = 10
 #alpha = 0.012
@@ -52,23 +56,50 @@ unet = tf.keras.models.load_model("unet_mixedfloat16.h5", compile=False)
 #%%
 #Set directory/files of particle images and background
 
+# #
+# background_file = 'Background_VM2_AVI_231005_112452/frame_0000.bmp'
+# image_folder = 'VM2_AVI_231005_113723_120pa_1mA/neg/'
+# image_folder = 'VM2_AVI_231005_113723_120pa_1mA/pos/'
+# image_folder = 'VM2_AVI_231005_114720_100pa_1mA/neg/'
+# image_folder = 'VM2_AVI_231005_114720_100pa_1mA/pos/'
 
-#background_file = 'Background_VM2_AVI_231005_112452/frame_0000.bmp'
-
-#image_folder = 'VM2_AVI_231005_113723_120pa_1mA/neg/'
-#image_folder = 'VM2_AVI_231005_113723_120pa_1mA/pos/'
-#image_folder = 'VM2_AVI_231005_114720_100pa_1mA/neg/'
-#image_folder = 'VM2_AVI_231005_114720_100pa_1mA/pos/'
-
+# #
 background_file = 'Background_VM2_AVI_231005_115847/frame_0000.bmp'
-
-#image_folder = 'VM2_AVI_231005_120016_090pa_1mA/neg/'
-#image_folder = 'VM2_AVI_231005_120016_090pa_1mA/pos/'
-#image_folder = 'VM2_AVI_231005_120730_070pa_1mA/neg/'
-#image_folder = 'VM2_AVI_231005_120730_070pa_1mA/pos/'
-#image_folder = 'VM2_AVI_231005_121115_060pa_1mA/neg/'
+# image_folder = 'VM2_AVI_231005_120016_090pa_1mA/neg/'
+# image_folder = 'VM2_AVI_231005_120016_090pa_1mA/pos/'
+# image_folder = 'VM2_AVI_231005_120730_070pa_1mA/neg/'
+# image_folder = 'VM2_AVI_231005_120730_070pa_1mA/pos/'
+# image_folder = 'VM2_AVI_231005_121115_060pa_1mA/neg/'
 image_folder = 'VM2_AVI_231005_121115_060pa_1mA/pos/'
 
+# #
+#background_file = 'Background_VM1_AVI_240124_115747/frame_0002.bmp'
+#image_folder = 'VM1_AVI_240124_121230_050pa_1mA/neg/'
+# image_folder = 'VM1_AVI_240124_121230_050pa_1mA/pos/'
+# image_folder = 'VM1_AVI_240124_133913_40pa_1mA/neg/'
+# image_folder = 'VM1_AVI_240124_133913_40pa_1mA/pos/'
+
+# #
+# background_file = 'Background_VM2_AVI_240124_133031/frame_0001.bmp'
+# image_folder = 'VM2_AVI_240124_140000_30pa_1mA/neg/'
+# image_folder = 'VM2_AVI_240124_140000_30pa_1mA/pos/'
+
+# #
+# background_file = 'Background_VM2_AVI_240125_142119/frame_0002.bmp'
+# image_folder = 'VM2_AVI_240125_142119_023pa_1mA/pos/'
+# image_folder = 'VM2_AVI_240125_142119_23pa_1p5mA/neg/'
+# image_folder = 'VM2_AVI_240125_142119_23pa_1p5mA/pos/'
+
+# #
+# background_file = 'Background_VM1_AVI_240125_142118/frame_0002.bmp'
+# image_folder = 'VM1_AVI_240125_142118_18pa_1mA/neg/'
+# image_folder = 'VM1_AVI_240125_142118_18pa_1mA/pos/'
+# image_folder = 'VM1_AVI_240125_142118_18pa_1p5mA/neg/'
+# image_folder = 'VM1_AVI_240125_142118_18pa_1p5mA/pos/'
+
+pressure = int(image_folder.split('_')[-2][-4:-2])
+
+#%%
 background_data = tf.keras.utils.load_img(background_file, color_mode='grayscale', target_size=None)
 background_data = np.expand_dims(background_data, axis=0)
 background_data = np.expand_dims(background_data, axis=-1) / 255
@@ -100,15 +131,52 @@ if not os.path.exists(particle_folder):
 #####
 # Tracing particles over multipe images:
 
-available_images = len(os.listdir(particle_folder)) #trace over all images in folder
 
+som = som_class.SOM(distance_threshold, alpha, startradius, endradius, iterations, epsilon)
+
+available_images = len(os.listdir(particle_folder)) #trace over all images in folder
 allmatches = np.array((),dtype=object)
 original_coords = np.array((),dtype=object)
-#images_to_match = 5
-images_to_match = len(os.listdir(particle_folder)) #trace over all images in folder
 position_files = [os.path.join(particle_folder, img) for img in os.listdir(particle_folder) if img.endswith(".npy")]
 position_files.sort()
 min_length = 5
+
+#%%
+#TEMP coordinates #!!!
+
+all_coords = np.array((), dtype=object)
+particle_number =  np.array(())
+
+images_to_match = available_images
+for i in range(min(images_to_match,len(position_files)-1)):
+    filename1 = position_files[i]
+    filename2 = position_files[i+1]
+    coords1, coords2 = som.read_in_coordinates(filename1, filename2)
+    number_found = len(coords1)
+    particle_number = np.append(particle_number, number_found)
+    new_coords = np.array([coords1,None],dtype=object)
+    new_coords = np.delete(new_coords, 1)
+    all_coords = np.append(all_coords, new_coords)
+
+imax = np.argmax(particle_number)
+
+most_coords = all_coords[imax]
+x_coords = most_coords[:,0]
+y_coords = most_coords[:,1]
+plt.figure(dpi=500)
+plt.plot(x_coords, y_coords,'x')
+plt.show()
+
+# folder_json_raw = 'coordinate_data'
+# json_data = {'x':x_coords.tolist(), 'y':y_coords.tolist()}
+
+# save_file = open(folder_json_raw + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] +'_coords'+'.json','w')
+# json.dump(json_data, save_file)
+# save_file.close()
+
+#%%
+
+images_to_match = available_images
 for i in range(min(images_to_match,len(position_files)-1)):
     filename1 = position_files[i]
     filename2 = position_files[i+1]
@@ -148,9 +216,6 @@ plt.show()
 
 #%%
 # calculation velocity and positions
-
-framerate = 1/50
-pixelsize = 14.7e-6
 
 
 particle_ids = filtered_particles['particle_id'].unique().astype(int)
@@ -210,33 +275,35 @@ plt.title(title)
 plt.show()
 
 
-
-
 ### save to json
 #raw/filtered particles
-folder_json_raw = 'json_files_raw'
-
-json_raw = filtered_particles.to_json()
-json_raw = json.loads(json_raw)
-
-save_file = open(folder_json_raw + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] +'_filtered_particles'+  +'.json','w')
-json.dump(json_raw, save_file)
-save_file.close()
-
-#calcs.
-folder_json = 'json_files'
-
-json_calc = eval_df.to_json()
-json_calc = json.loads(json_calc)
-
-save_file = open(folder_json + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] +'_filtered_particles'+  +'.json','w')
-json.dump(json_calc, save_file)
-save_file.close()
+if save != 0:
+    folder_json = 'json_files'
+    json_data = {'x_1frame':x_coords.tolist(),
+                 'y_1frame':y_coords.tolist(),
+                 'x_raw':filtered_particles['x'].tolist(),
+                 'y_raw':filtered_particles['y'].tolist(),
+                 'pid_raw':filtered_particles['particle_id'].tolist(),
+                 'frame_number_raw':filtered_particles['frame_number'].tolist(),
+                 'x':eval_df['avx'].tolist(),
+                 'y':eval_df['avy'].tolist(),
+                 'velocity':eval_df['avdxy'].tolist(),
+                 'pid':eval_df['id'].tolist(),
+                 'frame':eval_df['frame'].tolist(),
+                 'pressure':pressure,
+                 'alpha':alpha,
+                 'epsilon':epsilon,
+                 'iterations':iterations,
+                 'framerate':framerate,
+                 'pixelsize':pixelsize
+                 }
+    
+    save_file = open(folder_json + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] +'.json','w')
+    json.dump(json_data, save_file)
+    save_file.close() 
 
 #%%
 #todo
-
-# good params? -> bayesian opt
-# s
+# run with high epsilon for many coords
 
 
