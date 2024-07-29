@@ -20,10 +20,10 @@ import som_class
 import json
 
 distance_threshold = 10
-alpha = 0.04
+alpha = 0.03
 startradius = 100
 endradius = 1
-iterations = 40
+iterations = 30
 epsilon = 4
 
 framerate = 1/50
@@ -64,17 +64,18 @@ unet = tf.keras.models.load_model("unet_mixedfloat16.h5", compile=False)
 # image_folder = 'VM2_AVI_231005_114720_100pa_1mA/pos/'
 
 # #
-background_file = 'Background_VM2_AVI_231005_115847/frame_0000.bmp'
+# background_file = 'Background_VM2_AVI_231005_115847/frame_0000.bmp'
 # image_folder = 'VM2_AVI_231005_120016_090pa_1mA/neg/'
 # image_folder = 'VM2_AVI_231005_120016_090pa_1mA/pos/'
 # image_folder = 'VM2_AVI_231005_120730_070pa_1mA/neg/'
 # image_folder = 'VM2_AVI_231005_120730_070pa_1mA/pos/'
 # image_folder = 'VM2_AVI_231005_121115_060pa_1mA/neg/'
-image_folder = 'VM2_AVI_231005_121115_060pa_1mA/pos/'
+# image_folder = 'VM2_AVI_231005_121115_060pa_1mA/pos/'
 
+#!!! cant create unet files  with VM1 images
 # #
-#background_file = 'Background_VM1_AVI_240124_115747/frame_0002.bmp'
-#image_folder = 'VM1_AVI_240124_121230_050pa_1mA/neg/'
+# background_file = 'Background_VM1_AVI_240124_115747/frame_0002.bmp'
+# image_folder = 'VM1_AVI_240124_121230_050pa_1mA/neg/'
 # image_folder = 'VM1_AVI_240124_121230_050pa_1mA/pos/'
 # image_folder = 'VM1_AVI_240124_133913_40pa_1mA/neg/'
 # image_folder = 'VM1_AVI_240124_133913_40pa_1mA/pos/'
@@ -91,16 +92,19 @@ image_folder = 'VM2_AVI_231005_121115_060pa_1mA/pos/'
 # image_folder = 'VM2_AVI_240125_142119_23pa_1p5mA/pos/'
 
 # #
-# background_file = 'Background_VM1_AVI_240125_142118/frame_0002.bmp'
+background_file = 'Background_VM1_AVI_240125_142118/frame_0002.bmp'
 # image_folder = 'VM1_AVI_240125_142118_18pa_1mA/neg/'
 # image_folder = 'VM1_AVI_240125_142118_18pa_1mA/pos/'
 # image_folder = 'VM1_AVI_240125_142118_18pa_1p5mA/neg/'
-# image_folder = 'VM1_AVI_240125_142118_18pa_1p5mA/pos/'
+image_folder = 'VM1_AVI_240125_142118_18pa_1p5mA/pos/'
 
 pressure = int(image_folder.split('_')[-2][-4:-2])
 
 #%%
 background_data = tf.keras.utils.load_img(background_file, color_mode='grayscale', target_size=None)
+
+if image_folder[:3]=='VM1':
+    background_data = tf.keras.utils.load_img(background_file, color_mode='grayscale', target_size=(264,1600))
 background_data = np.expand_dims(background_data, axis=0)
 background_data = np.expand_dims(background_data, axis=-1) / 255
 
@@ -113,6 +117,8 @@ if not os.path.exists(particle_folder):
 
     for filename in image_files:
         image_tensor = tf.keras.utils.load_img(filename, color_mode='grayscale', target_size=None)
+        if image_folder[:3]=='VM1':
+            image_tensor = tf.keras.utils.load_img(filename, color_mode='grayscale', target_size=(264,1600))
         image_tensor = np.expand_dims(image_tensor, axis=0)
         image_tensor = np.expand_dims(image_tensor, axis=-1) / 255
         image_tensor = image_tensor - (background_data)*0.95 #!!! background subtract
@@ -125,7 +131,23 @@ if not os.path.exists(particle_folder):
             np.save(particle_folder + filename.split('/')[2].split('.')[0] + '.npy', particles)
     img = np.array(Image.open(image_files[0]))/255
     particles_to_show = np.load(particle_folder + image_files[0].split('/')[2].split('.')[0] + '.npy')
-    
+  
+# for filename in image_files:
+#     image_tensor = tf.keras.utils.load_img(filename, color_mode='grayscale', target_size=None)
+#     if image_folder[:3]=='VM1':
+#         image_tensor = tf.keras.utils.load_img(filename, color_mode='grayscale', target_size=(264,1600))
+#     image_tensor = np.expand_dims(image_tensor, axis=0)
+#     image_tensor = np.expand_dims(image_tensor, axis=-1) / 255
+#     image_tensor = image_tensor - (background_data)*0.95 #!!! background subtract
+#     unet_result = unet(image_tensor)
+#     particle_mask = unet_result[0, :, :, 0]>0.99
+#     particles = np.array(skimage.measure.regionprops(skimage.measure.label(particle_mask)))
+#     if len(particles) > 0:
+#         particles = np.array([c["Centroid"] for c in particles])
+#         particles[:, [0, 1]] = particles[:,[1, 0]]  # correcting, so particles[:,0] is x and particles[:,1] is y
+#         np.save(particle_folder + filename.split('/')[2].split('.')[0] + '.npy', particles)
+# img = np.array(Image.open(image_files[0]))/255
+# particles_to_show = np.load(particle_folder + image_files[0].split('/')[2].split('.')[0] + '.npy')
 
 #%%
 #####
@@ -183,10 +205,12 @@ for i in range(min(images_to_match,len(position_files)-1)):
     coords1, coords2 = som.read_in_coordinates(filename1, filename2)
     coords1, coords2 = som.match_particles(coords1, coords2)
     if i==0:
-        match = np.array((coords1,coords2),dtype=object)
+        match = np.array((coords1,coords2), dtype=object)
     else:
         match = np.array([coords2,None],dtype=object)
         match = np.delete(match,1)
+    # match = np.array([coords1,None],dtype=object)
+    # match = np.delete(match,1)
     orig_coords = np.array([coords1,None],dtype=object)
     orig_coords = np.delete(orig_coords,1)
     allmatches = np.append(allmatches,match)
@@ -248,6 +272,10 @@ for pid in particle_ids:
         i = i+1
 eval_df = eval_df.astype({'avx':float,'avy':float,'avdxy':float, 'id':int})
 
+#vel_error   = scipy.stats.mstats.sem(np.array(e_df['avdxy']))
+#vel_mean  = np.mean(e_df['avdxy'])
+#vel_error = v_error/vel_mean
+
 #%%
 # plots
 
@@ -279,23 +307,24 @@ plt.show()
 #raw/filtered particles
 if save != 0:
     folder_json = 'json_files'
-    json_data = {'x_1frame':x_coords.tolist(),
-                 'y_1frame':y_coords.tolist(),
-                 'x_raw':filtered_particles['x'].tolist(),
-                 'y_raw':filtered_particles['y'].tolist(),
-                 'pid_raw':filtered_particles['particle_id'].tolist(),
-                 'frame_number_raw':filtered_particles['frame_number'].tolist(),
-                 'x':eval_df['avx'].tolist(),
-                 'y':eval_df['avy'].tolist(),
-                 'velocity':eval_df['avdxy'].tolist(),
-                 'pid':eval_df['id'].tolist(),
-                 'frame':eval_df['frame'].tolist(),
-                 'pressure':pressure,
-                 'alpha':alpha,
-                 'epsilon':epsilon,
-                 'iterations':iterations,
-                 'framerate':framerate,
-                 'pixelsize':pixelsize
+    json_data = {
+                'pressure':pressure,
+                'alpha':alpha,
+                'epsilon':epsilon,
+                'iterations':iterations,
+                'framerate':framerate,
+                'pixelsize':pixelsize,
+                'x':eval_df['avx'].tolist(),
+                'y':eval_df['avy'].tolist(),
+                'velocity':eval_df['avdxy'].tolist(),
+                'pid':eval_df['id'].tolist(),
+                'x_raw':filtered_particles['x'].tolist(),
+                'y_raw':filtered_particles['y'].tolist(),
+                'pid_raw':filtered_particles['particle_id'].tolist(),
+                'frame_number_raw':filtered_particles['frame_number'].tolist(),
+                'frame':eval_df['frame'].tolist(),
+                'x_1frame':x_coords.tolist(),
+                'y_1frame':y_coords.tolist()
                  }
     
     save_file = open(folder_json + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] +'.json','w')

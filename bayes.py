@@ -27,7 +27,7 @@ pixelsize = 14.7e-6
 distance_threshold = 10
 startradius = 100
 endradius   = 0.5
-iterations  = 50
+#iterations  = 50
 epsilon     = 4
 
 save = 0
@@ -70,15 +70,15 @@ unet = tf.keras.models.load_model("unet_mixedfloat16.h5", compile=False)
 # image_folder = 'VM2_AVI_231005_121115_060pa_1mA/pos/'
 
 # #
-background_file = 'Background_VM1_AVI_240124_115747/frame_0002.bmp'
-image_folder = 'VM1_AVI_240124_121230_050pa_1mA/neg/'
+# background_file = 'Background_VM1_AVI_240124_115747/frame_0002.bmp'
+# image_folder = 'VM1_AVI_240124_121230_050pa_1mA/neg/'
 # image_folder = 'VM1_AVI_240124_121230_050pa_1mA/pos/'
 # image_folder = 'VM1_AVI_240124_133913_40pa_1mA/neg/'
 # image_folder = 'VM1_AVI_240124_133913_40pa_1mA/pos/'
 
 # #
-# background_file = 'Background_VM2_AVI_240124_133031/frame_0001.bmp'
-# image_folder = 'VM2_AVI_240124_140000_30pa_1mA/neg/'
+background_file = 'Background_VM2_AVI_240124_133031/frame_0001.bmp'
+image_folder = 'VM2_AVI_240124_140000_30pa_1mA/neg/'
 # image_folder = 'VM2_AVI_240124_140000_30pa_1mA/pos/'
 
 # #
@@ -128,9 +128,8 @@ if not os.path.exists(particle_folder):
 #%%
 #####
 # Tracing particles over multipe images:
-
-#def som_output(alpha, iterations, epsilon):    
-def som_output(alpha, iopt):    
+    
+def som_output(alpha, iterations, iopt):    
 
     som = som_class.SOM(distance_threshold, alpha, startradius, endradius, iterations, epsilon)
     
@@ -215,14 +214,12 @@ def som_output(alpha, iopt):
 
 #%%
 #def opt_condition(param_a, param_i, param_e):
-def opt_condition(param_alpha):
-    #param_i_int = int(param_i)
+def opt_condition(param_alpha, param_iter):
+    param_iter_int = int(param_iter)
     #param_e_int = int(param_e)
     iopt=1
-    #print('params:\n a = %.4f \n i = %d \n e = %d'%(param_a, param_i_int, param_e_int))
-    print('params:\n a = %.4f'%(param_alpha))
-    #f_p, e_df, c_ratio = som_output(alpha = param_a, iterations = param_i_int, epsilon = param_e_int)
-    f_p, e_df, c_ratio = som_output(param_alpha, iopt)
+    print('params:\n a = %.4f \n i = %d \n'%(param_alpha, param_iter_int))
+    f_p, e_df, c_ratio = som_output(param_alpha, param_iter_int, iopt)
     
     if e_df.shape[0] == 0:
         rel_error = 100
@@ -234,29 +231,28 @@ def opt_condition(param_alpha):
     print('rel error = %.4f' %rel_error)
     
     print('count: %d' %c_ratio)
-    return c_ratio
-    #return 1/rel_error    
+    #return c_ratio
+    return 1/rel_error    
 
 #%%
 
 ## optimization #!!!
-#pbounds = {'param_a':(0.01,0.1), 'param_i':(20,60), 'param_e':(2,6)}
-pbounds = {'param_alpha':(0.005,0.2)}#, 'param_endradius':(0.1,3)}
+pbounds = {'param_alpha':(0.001,0.1), 'param_iter':(10,100)}
 optimizer = bayes_opt.BayesianOptimization(opt_condition, pbounds=pbounds)
 
-optimizer.maximize(init_points=5, n_iter=30)
+optimizer.maximize(init_points=5, n_iter=50)
 
 alpha_opt = optimizer.max['params']['param_alpha']
-#iterations_opt = int(optimizer.max['params']['param_i'])
+iterations_opt = int(optimizer.max['params']['param_iter'])
 #epsilon_opt = int(optimizer.max['params']['param_e'])
 #endradius_opt = optimizer.max['params']['param_endradius']
 
 iopt=0
 #filtered_particles, eval_df , count_opt = som_output(alpha_opt, iterations_opt, epsilon_opt)
-filtered_particles, eval_df , count_opt = som_output(alpha_opt, iopt)
+filtered_particles, eval_df , count_opt = som_output(alpha_opt, iterations_opt, iopt)
 
-#title = 'alpha=%.4f | iter.=%d | $\epsilon$=%d'%(alpha_opt, iterations_opt, epsilon_opt)
-title = 'alpha=%.4f'%(alpha_opt)
+title = 'alpha=%.4f | iter.=%d '%(alpha_opt, iterations_opt)
+
 
 suptitle = image_folder.split('_')[4] +  ' / ' + image_folder.split('/')[1] 
 
@@ -308,25 +304,25 @@ plt.show()
 #%%
 ### save to json
 #raw/filtered particles
-if save != 0:
-    folder_json_raw = 'json_files_opt'
+# if save != 0:
+#     folder_json_raw = 'json_files_opt'
     
-    json_raw = filtered_particles.to_json()
-    json_raw = json.loads(json_raw)
+#     json_raw = filtered_particles.to_json()
+#     json_raw = json.loads(json_raw)
     
-    save_file = open(folder_json_raw + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] + '_filtered_particles' + '.json','w')
-    json.dump(json_raw, save_file)
-    save_file.close()
+#     save_file = open(folder_json_raw + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] + '_filtered_particles' + '.json','w')
+#     json.dump(json_raw, save_file)
+#     save_file.close()
     
-    #calcs.
-    folder_json = 'json_files'
+#     #calcs.
+#     folder_json = 'json_files'
     
-    json_calc = eval_df.to_json()
-    json_calc = json.loads(json_calc)
+#     json_calc = eval_df.to_json()
+#     json_calc = json.loads(json_calc)
     
-    save_file = open(folder_json + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] + '_calcs' + '.json','w')
-    json.dump(json_calc, save_file)
-    save_file.close()
+#     save_file = open(folder_json + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] + '_calcs' + '.json','w')
+#     json.dump(json_calc, save_file)
+#     save_file.close()
 
 #%%
 #todo
