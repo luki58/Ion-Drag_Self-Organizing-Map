@@ -35,7 +35,7 @@ epsilon = 4
 save = True
 
 # Set directory/files of particle images and background (data folder requires calculated particle positions)
-image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_240124_120826_50Pa_1p5mA/neg/'
+image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_231006_131225_50Pa_1p5mA /neg/'
 #image_folder = 'VM1_AVI_231006_130201_90Pa_1mA/pos/'
 
 particle_folder = image_folder[:-1] + '_positions/' #create folder for positions
