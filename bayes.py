@@ -31,11 +31,11 @@ epsilon     = 4
 
 #bayes opt. inputs
 opt_init_points = 5
-opt_iterations = 50
+opt_iterations = 20
 pbounds = {'param_alpha':(0.001,0.2)} #bounds of parameter variation
 
 # Set directory/files of particle images and background (data folder requires calculated particle positions)
-image_folder = 'VM1_AVI_231006_130519_80Pa_1mA/neg/'
+image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_231006_130049_90pa_1p5mA/pos/'
 #image_folder = 'VM2_AVI_231005_113723_120pa_1mA/pos/'
 
 particle_folder = image_folder[:-1] + '_positions/' #folder for positions
@@ -72,16 +72,16 @@ def som_output(alpha):
         original_coords = np.append(original_coords,orig_coords)
 
     allmatches = som.tracing(allmatches,original_coords)
-    starting_image = int(position_files[0].split('/')[2].split('.')[0].split('_')[1])
+    starting_image = int(position_files[0].split('/')[9].split('.')[0].split('_')[1])
     dataframe = som.convert_to_dataframe(allmatches,starting_image)
     filtered_particles = som.dataframe_min_length_filter(dataframe,min_length)
     
     # calculation velocity and positions
     particle_ids = filtered_particles['particle_id'].unique().astype(int)
     eval_df = pd.DataFrame(columns=['avx', 'avy', 'avdxy', 'id', 'frame'])
-    if image_folder.split('_')[0] == 'VM1':
+    if image_folder.split('_')[1][4:] == 'VM1':
         framerate = framerate2
-    elif image_folder.split('_')[0] == 'VM2':
+    elif image_folder.split('_')[1][4:] == 'VM2':
         framerate = framerate1
     frame_calc = 3 #number of frames used to calc. velocity
     i = 0

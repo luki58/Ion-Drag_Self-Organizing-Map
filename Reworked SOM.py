@@ -24,23 +24,23 @@ pixelsize = 14.7e-6
 
 #%% inputs
 # SOM params
-alpha = 0.0083
+alpha = 0.03
 distance_threshold = 10
 startradius = 100
 endradius = 0.5
 iterations = 40
 epsilon = 4
 
-# set to 1 to save data to json
-save = 0
+# set to True to save data to json
+save = True
 
 # Set directory/files of particle images and background (data folder requires calculated particle positions)
-image_folder = 'VM1_AVI_231006_130201_90Pa_1mA/neg/'
+image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_240124_120826_50Pa_1p5mA/neg/'
 #image_folder = 'VM1_AVI_231006_130201_90Pa_1mA/pos/'
 
 particle_folder = image_folder[:-1] + '_positions/' #create folder for positions
 
-#%%
+
 #####
 # Tracing particles over multipe images:
 
@@ -73,7 +73,7 @@ for i in range(min(images_to_match,len(position_files)-1)):
     print(f"finished number {i+1}")
 print("now tracing")
 allmatches = som.tracing(allmatches,original_coords)
-starting_image = int(position_files[0].split('/')[2].split('.')[0].split('_')[1])
+starting_image = int(position_files[0].split('/')[9].split('.')[0].split('_')[1])
 dataframe = som.convert_to_dataframe(allmatches,starting_image)
 filtered_particles = som.dataframe_min_length_filter(dataframe,min_length)
 
@@ -107,9 +107,9 @@ particle_ids = filtered_particles['particle_id'].unique().astype(int)
 eval_df = pd.DataFrame(columns=['avx', 'avy', 'avdxy', 'id', 'frame'])    
 frame_calc = 3 #number of frames to calc. v
 i = 0
-if image_folder.split('_')[0] == 'VM1':
+if image_folder.split('_')[1][4:] == 'VM1':
     framerate = framerate2
-elif image_folder.split('_')[0] == 'VM2':
+elif image_folder.split('_')[1][4:] == 'VM2':
     framerate = framerate1
 
 for pid in particle_ids:
@@ -145,7 +145,7 @@ for ids in trace_df['particle_id']:
     trace_slice = trace_slice.sort_values('frame_number')
     plt.plot(trace_slice['x'], trace_slice['y'])
 plt.xlim(0,1600)
-plt.ylim(0,600)
+#plt.ylim(0,600)
 plt.title(title)
 plt.suptitle(image_folder.split('_')[-2] + ' | '  +image_folder.split('_')[-1])
 plt.show()
@@ -164,10 +164,20 @@ plt.suptitle(image_folder.split('_')[-2] + ' | '  +image_folder.split('_')[-1])
 plt.show()
 
 plt.figure(dpi=500)
+plt.plot(xyz_df['avy'], xyz_df['avdxy'], '.', markersize=1)
+vel_av = np.average(xyz_df['avdxy'])
+plt.ylim(0, vel_av*2)
+plt.ylabel('Velocity [m/s]')
+plt.xlabel('y [px]')
+plt.title(title)
+plt.suptitle(image_folder.split('_')[-2] + ' | '  +image_folder.split('_')[-1])
+plt.show()
+
+plt.figure(dpi=500)
 scatter = plt.scatter(xyz_df['avx'], xyz_df['avy'],c=xyz_df['avdxy'], s=2, cmap='inferno', vmin=0, vmax=np.mean(xyz_df['avdxy'])*2)
 plt.colorbar(scatter)
 plt.xlim(0,1600)
-plt.ylim(0,600)
+#plt.ylim(0,600)
 plt.ylabel('y [px]')
 plt.xlabel('x [px]')
 plt.title(title)
@@ -180,10 +190,12 @@ plt.show()
 
 pressure = int(image_folder.split('_')[-2][-5:-2])
 
-if save == 1:
+if save == True:
     folder_json = 'json_files'
     json_data = {
                 'pressure':pressure,
+                'current':image_folder.split('/')[7].split('_')[-1],
+                'polarity':image_folder.split('/')[8],
                 'alpha':alpha,
                 'epsilon':epsilon,
                 'iterations':iterations,
@@ -202,7 +214,7 @@ if save == 1:
                 'y_1frame':y_coords.tolist()
                  }
 
-    save_file = open(folder_json + '/' + image_folder.split('/')[0] + '_' + image_folder.split('/')[1] +'.json','w')
+    save_file = open(folder_json + '/' + image_folder.split('/')[7] + '_' + image_folder.split('/')[8] +'.json','w')
 
     json.dump(json_data, save_file)
     save_file.close() 

@@ -12,9 +12,12 @@ Created on Fri Oct  4 03:02:09 2024
 
 from PIL import Image
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle
 import tensorflow as tf
 import os
 import skimage.io
+import cv2
 
 #####
 #First gather positions in original images by using U-Net
@@ -23,20 +26,88 @@ unet = tf.keras.models.load_model("unet_mixedfloat16.h5", compile=False)
 
 #%%
 #Set directory/files of particle images and background
+#
+background_file = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_240124_Background/frame_0000.bmp'
+image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_240124_120826_50Pa_1p5mA/neg/'
+#
+# Variable to control how often to plot (e.g., every 5th image)
+plot_interval = 10  # Change this to 10 if you want to plot every 10th image
+filter_kernel = 32
 
 #
-background_file = 'Background_VM1_AVI_231006_130018/frame_0000.bmp'
-image_folder = 'VM1_AVI_231006_130201_90Pa_1mA/neg/'
-# image_folder = 'VM1_AVI_231006_130201_90Pa_1mA/pos/'
+#%%
+def plot_image_with_mask(image, mask, particles):
+    """
+    Function to plot an image with its corresponding mask and particle centroids.
+    
+    Parameters:
+    image (numpy array): The original image
+    mask (numpy array): The binary mask predicted by the U-Net model
+    particles (numpy array): Array of particle positions/centroids
+    
+    """
+    fig, ax = plt.subplots(figsize=(10, 6), dpi=300)
+
+    # Plot the original image with the mask overlay
+    ax.imshow(image, cmap="gray")
+    ax.imshow(mask, cmap="jet", alpha=0.8)  # Overlay mask with transparency
+
+    # Add red circles for each detected particle centroid
+    for particle in particles:
+        circle = Circle((particle[0], particle[1]), radius=10, edgecolor='red', facecolor='none', lw=.5)
+        ax.add_patch(circle)
+
+    ax.set_title("Original Image with Predicted Mask and Particle Centroids")
+    ax.axis("off")
+
+    plt.show()
+
+def normalize_brightness(image, min_brightness, max_brightness):
+    # Ensure the image is a numpy array
+    image = np.array(image).astype(np.float32)
+
+    # Normalize the image to [0, 1] range
+    image_normalized = (image - np.min(image)) / (np.max(image) - np.min(image))
+
+    # Scale the image to [min_brightness, max_brightness] range
+    normalized_image = image_normalized * (max_brightness - min_brightness) + min_brightness
+
+    return np.clip(normalized_image, min_brightness, max_brightness).astype(np.uint8)
+
+def enhance_contrast_clahe(image, filter_kernel):
+    """
+    Enhance the contrast using CLAHE (Contrast Limited Adaptive Histogram Equalization).
+    This method improves local contrast and avoids over-amplifying noise.
+    """
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(filter_kernel, filter_kernel))
+    enhanced_image = clahe.apply(image)
+
+    return enhanced_image   
+ 
+def sharpen_image(image, filter_kernel):
+    """
+    Apply sharpening filter to enhance the edges and details of the image.
+    """
+    kernel = np.array([[0, -1, 0], 
+                       [-1, 8,-1], 
+                       [0, -1, 0]])  # Simple sharpening kernel
+    sharpened_image = cv2.filter2D(image, -1, kernel)
+
+    return sharpened_image
+    
+def combined_enhancement(image, min_brightness=0, max_brightness=250):
+    """
+    Combine CLAHE and sharpening for enhanced particle detection.
+    """
+    normalized_image = normalize_brightness(image, min_brightness, max_brightness)
+    clahe_image = enhance_contrast_clahe(normalized_image, filter_kernel)
+    sharpened_image = sharpen_image(clahe_image, filter_kernel)
+    
+    return sharpened_image
 
 #%%
-background_data = tf.keras.utils.load_img(background_file, color_mode='grayscale', target_size=None)
-
-### resolutions need to be divisible by 4 ###
-if image_folder[:3]=='VM1':
-    background_data = tf.keras.utils.load_img(background_file, color_mode='grayscale', target_size=(264,1600))
-background_data = np.expand_dims(background_data, axis=0)
-background_data = np.expand_dims(background_data, axis=-1) / 255
+background = np.array(Image.open(background_file))
+resized_background = cv2.resize(np.array(background), (1600, 266), interpolation=cv2.INTER_LINEAR)
 
 image_files = [os.path.join(image_folder, img) for img in os.listdir(image_folder) if img.endswith(".bmp")]
 image_files.sort()
@@ -45,21 +116,28 @@ particle_folder = image_folder[:-1] + '_positions/' #create folder for positions
 if not os.path.exists(particle_folder):
     os.makedirs(particle_folder)    
 
-for filename in image_files:
-    image_tensor = tf.keras.utils.load_img(filename, color_mode='grayscale', target_size=None)
-    if image_folder[:3]=='VM1':
-        image_tensor = tf.keras.utils.load_img(filename, color_mode='grayscale', target_size=(264,1600))
-    image_tensor = np.expand_dims(image_tensor, axis=0)
-    image_tensor = np.expand_dims(image_tensor, axis=-1) / 255
-    image_tensor = image_tensor - (background_data)*0.95
+for idx, filename in enumerate(image_files):
+    image = np.array(Image.open(filename))
+    # Enhance the image before U-Net processing
+    enhanced_image = combined_enhancement(image, filter_kernel)
+    if image_folder[42:45]=='VM1':
+        target_size = (1600, 264)  # (width, height)
+        resized_image = cv2.resize(enhanced_image, target_size, interpolation=cv2.INTER_LINEAR)
+    image_tensor = np.expand_dims(resized_image, axis=0)
+    image_tensor = np.expand_dims(image_tensor, axis=-1)#/255
     unet_result = unet(image_tensor)
     particle_mask = unet_result[0, :, :, 0]>0.99
     particles = np.array(skimage.measure.regionprops(skimage.measure.label(particle_mask)))
     if len(particles) > 0:
         particles = np.array([c["Centroid"] for c in particles])
         particles[:, [0, 1]] = particles[:,[1, 0]]  # correcting, so particles[:,0] is x and particles[:,1] is y
-        np.save(particle_folder + filename.split('/')[2].split('.')[0] + '.npy', particles)
-img = np.array(Image.open(image_files[0]))/255
-particles_to_show = np.load(particle_folder + image_files[0].split('/')[2].split('.')[0] + '.npy')
+        np.save(particle_folder + filename.split('/')[9].split('.')[0] + '.npy', particles)
+    # Load and display image with mask and particles if condition is met
+    if idx % plot_interval == 0:
+        #img = np.array(Image.open(filename)) / 255
+        particles_to_show = np.load(particle_folder + filename.split('/')[9].split('.')[0] + '.npy')
 
+        # Plot the image, mask, and particles
+        plot_image_with_mask(enhanced_image, particle_mask, particles_to_show)
+#%%
 
