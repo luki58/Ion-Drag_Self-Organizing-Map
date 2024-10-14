@@ -17,6 +17,7 @@ from matplotlib.patches import Circle
 import tensorflow as tf
 import os
 import skimage.io
+from skimage.filters import gabor
 import cv2
 
 #####
@@ -27,13 +28,11 @@ unet = tf.keras.models.load_model("unet_mixedfloat16.h5", compile=False)
 #%%
 #Set directory/files of particle images and background
 #
-background_file = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_231007_Background/frame_0000.bmp'
+background_file = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_231006_Background/frame_0000.bmp'
 image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_231006_131225_50Pa_1p5mA/neg/'
 #
 # Variable to control how often to plot (e.g., every 5th image)
 plot_interval = 10  # Change this to 10 if you want to plot every 10th image
-filter_kernel = 32
-
 #
 #%%
 def plot_image_with_mask(image, mask, particles):
@@ -61,6 +60,14 @@ def plot_image_with_mask(image, mask, particles):
     ax.axis("off")
 
     plt.show()
+
+def apply_gabor_filter(image, frequency):
+    # Apply the Gabor filter (real part) to the image
+    filtered_real, _ = gabor(image, frequency=frequency)
+    
+    # Normalize the result
+    filtered_real = (filtered_real - filtered_real.min()) / (filtered_real.max() - filtered_real.min()) * 255
+    return filtered_real.astype(np.uint8)
 
 def normalize_brightness(image, min_brightness, max_brightness):
     # Ensure the image is a numpy array
@@ -95,15 +102,18 @@ def sharpen_image(image, filter_kernel):
 
     return sharpened_image
     
-def combined_enhancement(image, min_brightness=0, max_brightness=250):
+def combined_enhancement(image, background, min_brightness=0, max_brightness=200, frequency=8.0, filter_kernel = 8):
     """
     Combine CLAHE and sharpening for enhanced particle detection.
     """
     normalized_image = normalize_brightness(image, min_brightness, max_brightness)
-    clahe_image = enhance_contrast_clahe(normalized_image, filter_kernel)
-    sharpened_image = sharpen_image(clahe_image, filter_kernel)
+    normalized_background = normalize_brightness(background, min_brightness, max_brightness)
+    normalized = normalized_image - (normalized_background*0.85)
+    #clahe_image = enhance_contrast_clahe(normalized_image, filter_kernel)
+    #gabor_image = apply_gabor_filter(normalized_image, frequency)
+    #sharpened_image = sharpen_image(gabor_image, filter_kernel)
     
-    return sharpened_image
+    return normalized
 
 #%%
 background = np.array(Image.open(background_file))
@@ -119,7 +129,7 @@ if not os.path.exists(particle_folder):
 for idx, filename in enumerate(image_files):
     image = np.array(Image.open(filename))
     # Enhance the image before U-Net processing
-    enhanced_image = combined_enhancement(image, filter_kernel)
+    enhanced_image = combined_enhancement(image, background)
     if image_folder[42:45]=='VM1':
         target_size = (1600, 264)  # (width, height)
         resized_image = cv2.resize(enhanced_image, target_size, interpolation=cv2.INTER_LINEAR)

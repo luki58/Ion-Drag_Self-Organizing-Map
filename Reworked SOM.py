@@ -24,18 +24,20 @@ pixelsize = 14.7e-6
 
 #%% inputs
 # SOM params
-alpha = 0.03
+alpha = 0.01
 distance_threshold = 10
 startradius = 100
 endradius = 0.5
 iterations = 40
 epsilon = 4
+# Tracing
+min_length = 5
 
 # set to True to save data to json
 save = True
 
 # Set directory/files of particle images and background (data folder requires calculated particle positions)
-image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_231006_131225_50Pa_1p5mA /neg/'
+image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/Argon/VM1_AVI_231007_095609_15pa_1p5mA/neg/'
 #image_folder = 'VM1_AVI_231006_130201_90Pa_1mA/pos/'
 
 particle_folder = image_folder[:-1] + '_positions/' #create folder for positions
@@ -52,7 +54,6 @@ match = np.array((),dtype=object)
 original_coords = np.array((),dtype=object)
 position_files = [os.path.join(particle_folder, img) for img in os.listdir(particle_folder) if img.endswith(".npy")]
 position_files.sort()
-min_length = 5
 
 images_to_match = available_images
 for i in range(min(images_to_match,len(position_files)-1)):
@@ -73,7 +74,7 @@ for i in range(min(images_to_match,len(position_files)-1)):
     print(f"finished number {i+1}")
 print("now tracing")
 allmatches = som.tracing(allmatches,original_coords)
-starting_image = int(position_files[0].split('/')[9].split('.')[0].split('_')[1])
+starting_image = int(position_files[0].split('/')[10].split('.')[0].split('_')[1])
 dataframe = som.convert_to_dataframe(allmatches,starting_image)
 filtered_particles = som.dataframe_min_length_filter(dataframe,min_length)
 
@@ -103,16 +104,43 @@ y_coords = most_coords[:,1]
 #%%
 # velocity calculation 
 
-particle_ids = filtered_particles['particle_id'].unique().astype(int)
+# Define deviation and corridor parameters
+max_deviation_y = 0.05  # For example, particles can deviate by 0.1 = 10% of x direction in y
+y_corridor_min = 0  # Lower bound of the corridor in y-axis
+y_corridor_max = 200   # Upper bound of the corridor in y-axis
+
+
+# Parameters for particle selection
+percentage = .1  # Percentage of particles to consider (e.g., 0.5 means 50%)
+range_selection = 'second_half'  # Choose between 'first_half' or 'second_half'
+
+# Get the list of all particle IDs
+all_particle_ids = filtered_particles['particle_id'].unique().astype(int)
+
+# Determine the number of particles to select based on percentage
+n_particles_to_select = int(len(all_particle_ids) * percentage)
+
+# Sort particle IDs to make the selection predictable
+sorted_particle_ids = np.sort(all_particle_ids)
+
+# Select particles based on the specified range (first_half or second_half)
+if range_selection == 'first_half':
+    selected_particle_ids = sorted_particle_ids[:n_particles_to_select]
+elif range_selection == 'second_half':
+    selected_particle_ids = sorted_particle_ids[n_particles_to_select:]
+else:
+    raise ValueError("range_selection must be either 'first_half' or 'second_half'.")
+
 eval_df = pd.DataFrame(columns=['avx', 'avy', 'avdxy', 'id', 'frame'])    
-frame_calc = 3 #number of frames to calc. v
+frame_calc = 5 #number of frames to calc. v
 i = 0
-if image_folder.split('_')[1][4:] == 'VM1':
+
+if image_folder.split('/')[8][:3] == 'VM1':
     framerate = framerate2
-elif image_folder.split('_')[1][4:] == 'VM2':
+elif image_folder.split('/')[8][:3] == 'VM2':
     framerate = framerate1
 
-for pid in particle_ids:
+for pid in selected_particle_ids:
     pid_df = filtered_particles.loc[filtered_particles['particle_id']==pid]
     maxframes = len(pid_df['frame_number'])
     frame_slices = int((maxframes-maxframes%frame_calc)/frame_calc)
@@ -123,12 +151,31 @@ for pid in particle_ids:
         dy = slice_df['y'].diff()
         dxy = np.sqrt(dx**2 + dy**2)*pixelsize / (framerate*np.abs(slice_df['frame_number'].diff()))
         
-        eval_df.loc[i, 'id'] = pid
-        eval_df.loc[i, 'avx'] = slice_df['x'].mean()
-        eval_df.loc[i, 'avy'] = slice_df['y'].mean()
-        eval_df.loc[i, 'avdxy'] = np.mean(dxy[1:])
-        eval_df.loc[i, 'frame'] = slice_df['frame_number'].iloc[-1]
-        i = i+1
+        # Calculate the average X and Y
+        avg_x = slice_df['x'].mean()
+        avg_y = slice_df['y'].mean()
+       
+        # Check Y deviation (ensuring it does not exceed allowed deviation)
+        x_range = np.abs(dx[1:]).sum()  # Total movement in x direction
+        y_deviation_allowed = max_deviation_y * x_range
+        y_deviation_actual = np.abs(dy[1:]).sum()
+       
+        # Check if within the allowed y deviation
+        if y_deviation_actual <= y_deviation_allowed:
+            # Check if within the corridor limits
+            if y_corridor_min <= avg_y <= y_corridor_max:
+                eval_df.loc[i, 'id'] = pid
+                eval_df.loc[i, 'avx'] = avg_x
+                eval_df.loc[i, 'avy'] = avg_y
+                eval_df.loc[i, 'avdxy'] = np.mean(dxy[1:])
+                eval_df.loc[i, 'frame'] = slice_df['frame_number'].iloc[-1]
+                i = i + 1
+            else:
+                # Skip particle if it goes out of the y corridor
+                print(f"Particle {pid} skipped (outside y corridor).")
+        else:
+            # Skip particle if it exceeds allowed deviation
+            print(f"Particle {pid} skipped (exceeded y deviation).")
         
 eval_df = eval_df.astype({'avx':float,'avy':float,'avdxy':float, 'id':int, 'frame':int})
 
@@ -139,7 +186,7 @@ title = 'alpha=%.4f, iter.=%d, eps.=%d,'%(alpha, iterations, epsilon)
 
 # particle traces
 trace_df = filtered_particles
-plt.figure(dpi=500)
+plt.figure(dpi=300)
 for ids in trace_df['particle_id']:
     trace_slice = trace_df.loc[filtered_particles['particle_id']==ids]
     trace_slice = trace_slice.sort_values('frame_number')
@@ -153,7 +200,7 @@ plt.show()
 xyz_df = eval_df.sort_values('avx')
 xyz_df = xyz_df.sort_values('frame')
 
-plt.figure(dpi=500)
+plt.figure(dpi=300)
 plt.plot(xyz_df['avx'], xyz_df['avdxy'], '.', markersize=1)
 vel_av = np.average(xyz_df['avdxy'])
 plt.ylim(0, vel_av*2)
@@ -163,7 +210,7 @@ plt.title(title)
 plt.suptitle(image_folder.split('_')[-2] + ' | '  +image_folder.split('_')[-1])
 plt.show()
 
-plt.figure(dpi=500)
+plt.figure(dpi=300)
 plt.plot(xyz_df['avy'], xyz_df['avdxy'], '.', markersize=1)
 vel_av = np.average(xyz_df['avdxy'])
 plt.ylim(0, vel_av*2)
@@ -173,7 +220,7 @@ plt.title(title)
 plt.suptitle(image_folder.split('_')[-2] + ' | '  +image_folder.split('_')[-1])
 plt.show()
 
-plt.figure(dpi=500)
+plt.figure(dpi=300)
 scatter = plt.scatter(xyz_df['avx'], xyz_df['avy'],c=xyz_df['avdxy'], s=2, cmap='inferno', vmin=0, vmax=np.mean(xyz_df['avdxy'])*2)
 plt.colorbar(scatter)
 plt.xlim(0,1600)
@@ -194,8 +241,8 @@ if save == True:
     folder_json = 'json_files'
     json_data = {
                 'pressure':pressure,
-                'current':image_folder.split('/')[7].split('_')[-1],
-                'polarity':image_folder.split('/')[8],
+                'current':image_folder.split('/')[8].split('_')[-1],
+                'polarity':image_folder.split('/')[9],
                 'alpha':alpha,
                 'epsilon':epsilon,
                 'iterations':iterations,
@@ -214,7 +261,7 @@ if save == True:
                 'y_1frame':y_coords.tolist()
                  }
 
-    save_file = open(folder_json + '/' + image_folder.split('/')[7] + '_' + image_folder.split('/')[8] +'.json','w')
+    save_file = open(folder_json + '/' + image_folder.split('/')[8] + '_' + image_folder.split('/')[9] +'.json','w')
 
     json.dump(json_data, save_file)
     save_file.close() 
