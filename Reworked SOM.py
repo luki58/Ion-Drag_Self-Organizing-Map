@@ -25,19 +25,19 @@ pixelsize = 14.7e-6
 #%% inputs
 # SOM params
 alpha = 0.01
-distance_threshold = 10
+distance_threshold = 50
 startradius = 100
 endradius = 0.5
-iterations = 40
-epsilon = 4
+iterations = 80
+epsilon = 3.5
 # Tracing
-min_length = 5
+min_length = 4
 
 # set to True to save data to json
 save = True
 
 # Set directory/files of particle images and background (data folder requires calculated particle positions)
-image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/Argon/VM1_AVI_231007_095609_15pa_1p5mA/neg/'
+image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/Argon/VM1_AVI_231007_095935_12pa_1p5mA/neg/'
 #image_folder = 'VM1_AVI_231006_130201_90Pa_1mA/pos/'
 
 particle_folder = image_folder[:-1] + '_positions/' #create folder for positions
@@ -105,14 +105,14 @@ y_coords = most_coords[:,1]
 # velocity calculation 
 
 # Define deviation and corridor parameters
-max_deviation_y = 0.05  # For example, particles can deviate by 0.1 = 10% of x direction in y
+max_deviation_y = 0.15  # For example, particles can deviate by 0.1 = 10% of x direction in y
 y_corridor_min = 0  # Lower bound of the corridor in y-axis
-y_corridor_max = 200   # Upper bound of the corridor in y-axis
+y_corridor_max = 150   # Upper bound of the corridor in y-axis
 
 
 # Parameters for particle selection
-percentage = .1  # Percentage of particles to consider (e.g., 0.5 means 50%)
-range_selection = 'second_half'  # Choose between 'first_half' or 'second_half'
+percentage = .66  # Percentage of particles to consider (e.g., 0.5 means 50%)
+range_selection = 'first_half'  # Choose between 'first_half' or 'second_half'
 
 # Get the list of all particle IDs
 all_particle_ids = filtered_particles['particle_id'].unique().astype(int)
@@ -132,7 +132,8 @@ else:
     raise ValueError("range_selection must be either 'first_half' or 'second_half'.")
 
 eval_df = pd.DataFrame(columns=['avx', 'avy', 'avdxy', 'id', 'frame'])    
-frame_calc = 5 #number of frames to calc. v
+frame_calc = 3 #number of frames to calc. v
+min_movement = 0.001 #minimum movement being captured
 i = 0
 
 if image_folder.split('/')[8][:3] == 'VM1':
@@ -164,12 +165,15 @@ for pid in selected_particle_ids:
         if y_deviation_actual <= y_deviation_allowed:
             # Check if within the corridor limits
             if y_corridor_min <= avg_y <= y_corridor_max:
-                eval_df.loc[i, 'id'] = pid
-                eval_df.loc[i, 'avx'] = avg_x
-                eval_df.loc[i, 'avy'] = avg_y
-                eval_df.loc[i, 'avdxy'] = np.mean(dxy[1:])
-                eval_df.loc[i, 'frame'] = slice_df['frame_number'].iloc[-1]
-                i = i + 1
+                if np.mean(dxy[1:]) > min_movement:
+                    eval_df.loc[i, 'id'] = pid
+                    eval_df.loc[i, 'avx'] = avg_x
+                    eval_df.loc[i, 'avy'] = avg_y
+                    eval_df.loc[i, 'avdxy'] = np.mean(dxy[1:])
+                    eval_df.loc[i, 'frame'] = slice_df['frame_number'].iloc[-1]
+                    i = i + 1
+                else:
+                    print(f"Particle {pid} skipped (not moving).")
             else:
                 # Skip particle if it goes out of the y corridor
                 print(f"Particle {pid} skipped (outside y corridor).")
@@ -180,7 +184,6 @@ for pid in selected_particle_ids:
 eval_df = eval_df.astype({'avx':float,'avy':float,'avdxy':float, 'id':int, 'frame':int})
 
 
-#%%
 ## plots
 title = 'alpha=%.4f, iter.=%d, eps.=%d,'%(alpha, iterations, epsilon)
 

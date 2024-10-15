@@ -29,7 +29,7 @@ unet = tf.keras.models.load_model("unet_mixedfloat16.h5", compile=False)
 #Set directory/files of particle images and background
 #
 background_file = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_231006_Background/frame_0000.bmp'
-image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_231006_131225_50Pa_1p5mA/neg/'
+image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_231007_095935_12pa_1p5mA/neg/'
 #
 # Variable to control how often to plot (e.g., every 5th image)
 plot_interval = 10  # Change this to 10 if you want to plot every 10th image
