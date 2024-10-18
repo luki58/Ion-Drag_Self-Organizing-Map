@@ -28,7 +28,7 @@ alpha = 0.01
 distance_threshold = 50
 startradius = 100
 endradius = 0.5
-iterations = 80
+iterations = 40
 epsilon = 3.5
 # Tracing
 min_length = 4
@@ -37,7 +37,7 @@ min_length = 4
 save = True
 
 # Set directory/files of particle images and background (data folder requires calculated particle positions)
-image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/Argon/VM1_AVI_231007_095935_12pa_1p5mA/neg/'
+image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/Neon/VM1_AVI_240124_133913_40pa_1mA/neg/'
 #image_folder = 'VM1_AVI_231006_130201_90Pa_1mA/pos/'
 
 particle_folder = image_folder[:-1] + '_positions/' #create folder for positions
@@ -105,14 +105,14 @@ y_coords = most_coords[:,1]
 # velocity calculation 
 
 # Define deviation and corridor parameters
-max_deviation_y = 0.15  # For example, particles can deviate by 0.1 = 10% of x direction in y
-y_corridor_min = 0  # Lower bound of the corridor in y-axis
-y_corridor_max = 150   # Upper bound of the corridor in y-axis
+max_deviation_y = 0.025  # For example, particles can deviate by 0.1 = 10% of x direction in y
+y_corridor_min = 50  # Lower bound of the corridor in y-axis
+y_corridor_max = 130   # Upper bound of the corridor in y-axis
 
 
 # Parameters for particle selection
-percentage = .66  # Percentage of particles to consider (e.g., 0.5 means 50%)
-range_selection = 'first_half'  # Choose between 'first_half' or 'second_half'
+percentage = 0.35  # Percentage of particles to consider (e.g., 0.5 means 50%)
+range_selection = 'second_half'  # Choose between 'first_half' or 'second_half'
 
 # Get the list of all particle IDs
 all_particle_ids = filtered_particles['particle_id'].unique().astype(int)
