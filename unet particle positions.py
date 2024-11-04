@@ -28,8 +28,8 @@ unet = tf.keras.models.load_model("unet_mixedfloat16.h5", compile=False)
 #%%
 #Set directory/files of particle images and background
 #
-background_file = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_240124_133913_Background/frame_0000.bmp'
-image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/Neon/VM1_AVI_240124_133913_40pa_1mA/neg/'
+background_file = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_231007_094311_Background/frame_0000.bmp'
+image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/Argon_3mu/VM1_AVI_231007_095631_15Pa_1mA/neg/'
 #
 # Variable to control how often to plot
 plot_interval = 5  # Change this to 10 if you want to plot every 10th image
@@ -81,6 +81,29 @@ def normalize_brightness(image, min_brightness, max_brightness):
 
     return np.clip(normalized_image, min_brightness, max_brightness).astype(np.uint8)
 
+def scale_image_with_threshold(image, min_threshold, max_threshold):
+    """
+    Scales the image pixel values to the range 0 - 255 and applies the given min/max thresholds.
+    
+    Parameters:
+    - image: Input image as a NumPy array.
+    - min_threshold: Minimum threshold value.
+    - max_threshold: Maximum threshold value.
+    
+    Returns:
+    - Scaled image with values between 0 and 255.
+    """
+    # Clip the image values to the range defined by min_threshold and max_threshold
+    clipped_image = np.clip(image, min_threshold, max_threshold)
+    
+    # Normalize the image to the range 0 - 1
+    normalized_image = (clipped_image - min_threshold) / (max_threshold - min_threshold)
+    
+    # Scale the normalized image to the range 0 - 255
+    scaled_image = (normalized_image * 255).astype(np.uint8)
+    
+    return scaled_image
+
 def enhance_contrast_clahe(image, filter_kernel):
     """
     Enhance the contrast using CLAHE (Contrast Limited Adaptive Histogram Equalization).
@@ -106,14 +129,17 @@ def combined_enhancement(image, background, frequency=8.0, filter_kernel = 9):
     """
     Combine CLAHE and sharpening for enhanced particle detection.
     """
-    normalized_image = normalize_brightness(image, min_brightness=0, max_brightness=255)
-    normalized_background = normalize_brightness(background, min_brightness=0, max_brightness=255)
-    normalized = normalized_image - (normalized_background*0.25)
+    min_brightness_var = 8
+    max_brightness_var = 12
+    normalized_image = scale_image_with_threshold(image, min_threshold=min_brightness_var, max_threshold=max_brightness_var)
+    #normalized_background = normalize_brightness(background, min_brightness=min_brightness_var, max_brightness=max_brightness_var)
+    #normalized = normalized_image - (normalized_background*0.25)
     #clahe_image = enhance_contrast_clahe(normalized_image, filter_kernel)
     #gabor_image = apply_gabor_filter(normalized_image, frequency)
     #sharpened_image = sharpen_image(gabor_image, filter_kernel)
+    plt.imshow(normalized_image)
     
-    return normalized
+    return normalized_image
 
 #%%
 background = np.array(Image.open(background_file))
@@ -127,7 +153,7 @@ if not os.path.exists(particle_folder):
 
 for idx, filename in enumerate(image_files):
     image = np.array(Image.open(filename))
-    if image_folder[47:50]=='VM1':
+    if image_folder[52:55]=='VM1':
         target_size = (1600, 264)  # (width, height)
         resized_image = cv2.resize(image, target_size, interpolation=cv2.INTER_LINEAR)
         resized_background = cv2.resize(np.array(background), (1600, 264), interpolation=cv2.INTER_LINEAR)
@@ -149,5 +175,7 @@ for idx, filename in enumerate(image_files):
 
         # Plot the image, mask, and particles
         plot_image_with_mask(enhanced_image, particle_mask, particles_to_show)
+        
+print(image_folder)
 #%%
 
