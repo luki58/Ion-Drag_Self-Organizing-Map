@@ -14,7 +14,7 @@ import json
 
 #%% v mean plots
 
-json_folder = "json_files/Argon/1mA"
+json_folder = "json_files/Argon/1p5mA"
 # json_folder = "json_files/Argon/"
 file_list = [os.path.join(json_folder, img) for img in os.listdir(json_folder) if img.endswith(".json")]
 
@@ -70,6 +70,7 @@ plt.errorbar(pressure_neg, v_mean_neg, v_error_neg, fmt='d', color='r', linewidt
 plt.errorbar(pressure_pos, v_mean_pos, v_error_pos, fmt='o', color='r', linewidth=1, markersize=3, capsize=2, mfc='w', ecolor='b', label='positive polarity')
 plt.xlabel('Pressure [Pa]')
 plt.ylabel('$v_{mean}$ [mm/s]')
+plt.grid(color='gray', linestyle='-', linewidth=.2)
 plt.title(str(json_folder.split('/')[1]) + ' ' + str(json_folder.split('/')[2]))
 plt.legend(loc='upper right')
 plt.xlim(0,130)
