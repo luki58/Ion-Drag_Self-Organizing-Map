@@ -28,8 +28,8 @@ unet = tf.keras.models.load_model("unet_mixedfloat16.h5", compile=False)
 #%%
 #Set directory/files of particle images and background
 #
-background_file = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_231007_094311_Background/frame_0000.bmp'
-image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/Argon_3mu/VM1_AVI_231007_095631_15Pa_1mA/neg/'
+background_file = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_231006_Background/frame_0000.bmp'
+image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/Argon_3mu/VM1_AVI_231006_122658_110Pa_1mA/neg/'
 #
 # Variable to control how often to plot
 plot_interval = 5  # Change this to 10 if you want to plot every 10th image
@@ -130,7 +130,7 @@ def combined_enhancement(image, background, frequency=8.0, filter_kernel = 9):
     Combine CLAHE and sharpening for enhanced particle detection.
     """
     min_brightness_var = 8
-    max_brightness_var = 12
+    max_brightness_var = 20
     normalized_image = scale_image_with_threshold(image, min_threshold=min_brightness_var, max_threshold=max_brightness_var)
     #normalized_background = normalize_brightness(background, min_brightness=min_brightness_var, max_brightness=max_brightness_var)
     #normalized = normalized_image - (normalized_background*0.25)

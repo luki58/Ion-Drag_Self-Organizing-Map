@@ -14,7 +14,7 @@ import json
 
 #%% v mean plots
 
-json_folder = "json_files/Argon/1p5mA"
+json_folder = "json_files/Argon/1mA"
 # json_folder = "json_files/Argon/"
 file_list = [os.path.join(json_folder, img) for img in os.listdir(json_folder) if img.endswith(".json")]
 
