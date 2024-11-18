@@ -23,25 +23,35 @@ m_neon = 20.1797 * u  # neon mass in kg
 m_argon = 39.948 * u  # neon mass in kg
 
 # Argon Data Interpolated from Zobnin unpublished Data (measured by Langmur Probe in Pk-4)
+# Load the JSON file
 
-def extract_plasma_data(file_path, current):
-    # Load the JSON file
-    with open(file_path, "r") as file:
-        data = json.load(file)
-    
+file_path = "argon_interpolation/argon_params.json"
+
+with open(file_path, "r") as file:
+
+    data = json.load(file)
+
+# Extract data for a given current and pressure range
+
+def extract_plasma_data(data, current, pressure_range):
+
     # Ensure the selected current is valid
     if current not in data:
-        raise ValueError(f"Invalid current selected. Available options: {list(data.keys())[1:]}")
-    
-    # Extract the data for the selected current
-    E_0_argon = np.array(data[current]["E"])  # Electric field strength
-    T_e_argon = np.array(data[current]["T"])  # Electron temperature
-    n_e0_argon = np.array(data[current]["n"])  # Electron number density
-    
-    return E_0_argon, T_e_argon, n_e0_argon
+        raise ValueError(f"Invalid current selected. Available options: {list(data.keys())}")
 
-# Path to the JSON file
-file_path = "json_files/Argon/plasma_parameters_argon.json"
+    # Extract the data for the selected current
+    pressure_data = np.array(data[current]["Pressure (Pa)"])
+    E_0 = np.array(data[current]["E"])  # Electric field strength
+    T_e = np.array(data[current]["T"])  # Electron temperature
+    n_e0 = np.array(data[current]["n"])  # Electron number density
+
+    # Interpolate to match the requested pressure range
+    E_0_interp = np.interp(pressure_range, pressure_data, E_0)
+    T_e_interp = np.interp(pressure_range, pressure_data, T_e)
+    n_e0_interp = np.interp(pressure_range, pressure_data, n_e0)
+
+    return E_0_interp, T_e_interp, n_e0_interp
+
 
 # Functions for interpolation Pustilnik et al.
 
@@ -73,27 +83,27 @@ def e_field(x, I):
     return poly1d_fn(x)
 
 # Variable Parameters
-gas_type = "Neon" #or "Neon"
+gas_type = "Argon" #or "Neon"
 I = 1  # mA
 E_multiplier = 1.
+selected_current = str(I)+"mA"
 #
 p = np.array([15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 120])  # Pa
+
 if gas_type == "Neon":
     z = [.3, .3, .3, .3, .3, .3, .3, .3, .3, .3, .3, .3]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al.
     epstein = [1.44] * len(p)  # Neutral damping Epstein coefficient NEON = 1.44; ARGON = 1.26!
 else:
-    z = [.3, .3, .3, .3, .3, .3, .3, .3, .3, .3, .3, .3]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al.
+    z = [.3, .4, .4, .4, .4, .4, .4, .4, .4, .4, .4, .4]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al.
     epstein = [1.26] * len(p)  # Neutral damping Epstein coefficient NEON = 1.44; ARGON = 1.26!
     
 a = (3.4 / 2) * 10**(-6)  # Micrometer particle radius
 n_d = np.array([.1] * len(p)) * 10**11  #? Dust number density in m^-3; not sure about this value
 
-# Calculations Neon
-selected_current = str(I)+"mA"
-
 # Extract the data for the selected current
 try:
-    E_0_argon, T_e_argon, n_e0_argon = extract_plasma_data(file_path, selected_current)
+    E_0_argon, T_e_argon, n_e0_argon = extract_plasma_data(data, selected_current, p)
+    E_0_argon = np.multiply(E_0_argon, -100*E_multiplier)  # V/m
 except ValueError as error_data:
     print(error_data)
 
@@ -140,6 +150,7 @@ def integration_function(x, debye_Di_val, roh_0_val):
     return 2 * np.exp(-x) * np.log((2 * debye_Di_val * x + roh_0_val) / (2 * a * x + roh_0_val))
 
 roh_0 = np.divide(Z_d , T_i*11606) * e**2 / (4 * np.pi * epsilon_0 * k)
+
 #
 integrated_f = np.array([
     integrate(lambda x: integration_function(x, debye_Di[i], roh_0[i]), 0, np.inf)[0]

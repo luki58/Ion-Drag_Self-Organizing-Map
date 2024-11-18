@@ -8,6 +8,41 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
+import json
+import os
+
+def store_fitted_data(fit_results, current, pressure_fit_range, fit = "Power Law" , file_name="argon_params.json"):
+    """Parameters:
+    - fit_results: Dictionary containing the fitted data for n, T, E.
+    - current: Discharge current (e.g., "1mA", "2mA").
+    - pressure_fit_range: Pressure range used for evaluation.
+    - file_name: Name of the JSON file to store the data.
+    """
+    # Prepare data to store
+    current_data = {
+        "Pressure (Pa)": list(pressure_fit_range),
+        "n": list(fit_results[fit]["n_fit"]),
+        "T": list(fit_results[fit]["T_fit"]),
+        "E": list(fit_results[fit]["E_fit"])
+    }
+    
+    
+    # Check if the file already exists
+    if os.path.exists(file_name):
+        # Load existing data
+        with open(file_name, "r") as file:
+            data = json.load(file)
+    else:
+        # Initialize a new data structure
+        data = {}
+        
+    # Add the new data for the specified current
+    data[current] = current_data
+
+    # Save the updated data to the JSON file
+    with open(file_name, "w") as file:
+        json.dump(data, file, indent=4)
+    print(f"Data for {current} successfully stored in {file_name}.")
 
 # Define possible fitting models for the data
 
@@ -32,36 +67,32 @@ def logarithmic_model(x, a, b):
 
 
 argon_df = {
-
     "P_Pa": [10, 20, 40, 60],  # Pressures in Pascal
-
     "1mA_n": [2.81 , 4.43, 4.01, 3.26],  # Electron density (10^8 cm^-3) 10Pa = 2.81
-
     "1mA_T": [4.13, 4.555, 4.795, 5.23],  # Electron temperature (eV)
-
     "1mA_E": [1.58, 1.855, 2.395, 4.10],  # Electric field (V/cm)
-
-    "2mA_n": [7.43, 8.14, 6.22],  # Electron density (10^8 cm^-3)
-
-    "2mA_T": [4.94, 5.08, 4.37],  # Electron temperature (eV)
-
-    "2mA_E": [2.0, 2.53, 4.38],  # Electric field (V/cm)
-
+    "2mA_n": [7.43, 8.14, 6.22],  # Electron density (10^8 cm^-3) 20 - 40 Pa
+    "2mA_T": [4.94, 5.08, 4.37],  # Electron temperature (eV) 20 - 40 Pa
+    "2mA_E": [2.0, 2.53, 4.38],  # Electric field (V/cm) 20 - 40 Pa
 }
 
 
 
 # Fit models to the data and evaluate fits for 1mA
 
-x_data = np.array(argon_df["P_Pa"])
-x_data_n = np.array(argon_df["P_Pa"][1:])
-#y_data_n = np.array(argon_df["1mA_n"][1:])
-#y_data_T = np.array(argon_df["1mA_T"])
-#y_data_E = np.array(argon_df["1mA_E"])
+current = "2mA"
 
-y_data_n = np.array(argon_df["2mA_n"])
-y_data_T = np.array(argon_df["2mA_T"])
-y_data_E = np.array(argon_df["2mA_E"])
+if current == "1mA":
+    x_data = np.array(argon_df["P_Pa"])
+    x_data_n = np.array(argon_df["P_Pa"][1:])
+    y_data_n = np.array(argon_df["1mA_n"][1:])
+    y_data_T = np.array(argon_df["1mA_T"])
+    y_data_E = np.array(argon_df["1mA_E"])
+else:
+    x_data_n = np.array(argon_df["P_Pa"][1:])
+    y_data_n = np.array(argon_df["2mA_n"])
+    y_data_T = np.array(argon_df["2mA_T"])
+    y_data_E = np.array(argon_df["2mA_E"])
 
 # Fit models
 
@@ -77,15 +108,20 @@ fits = {
 
 
 fit_results = {}
-pressure_fit_range = np.linspace(10, 100, 50)  # Pressure range for evaluation
+pressure_fit_range = np.linspace(10, 120, 23)  # Pressure range for evaluation
 
 
 for fit_name, model in fits.items():
     try:
-        # Fit models for each parameter
-        n_params, _ = curve_fit(model, x_data_n, y_data_n)
-        T_params, _ = curve_fit(model, x_data_n, y_data_T)
-        E_params, _ = curve_fit(model, x_data_n, y_data_E)
+        if current == "1mA":
+            # Fit models for each parameter
+            n_params, _ = curve_fit(model, x_data_n, y_data_n)
+            T_params, _ = curve_fit(model, x_data, y_data_T)
+            E_params, _ = curve_fit(model, x_data, y_data_E)
+        else:
+            n_params, _ = curve_fit(model, x_data_n, y_data_n)
+            T_params, _ = curve_fit(model, x_data_n, y_data_T)
+            E_params, _ = curve_fit(model, x_data_n, y_data_E)
 
         # Evaluate the models over the pressure range
         fit_results[fit_name] = {
@@ -106,7 +142,6 @@ plt.figure(figsize=(16, 12), dpi=400)
 # Electron density (n_e)
 
 plt.subplot(3, 1, 1)
-
 for fit_name, result in fit_results.items():
     plt.plot(pressure_fit_range, result["n_fit"], label=f"{fit_name} Fit")
 plt.scatter(x_data_n, y_data_n, label="Measured Data", color='black')
@@ -116,15 +151,14 @@ plt.ylabel("n_e (10^8 cm^-3)")
 plt.legend()
 plt.grid()
 
-
-
 # Electron temperature (T_e)
-
+if current == "2mA":
+    x_data = x_data_n
+    
 plt.subplot(3, 1, 2)
-
 for fit_name, result in fit_results.items():
     plt.plot(pressure_fit_range, result["T_fit"], label=f"{fit_name} Fit")
-plt.scatter(x_data_n, y_data_T, label="Measured Data", color='black')
+plt.scatter(x_data, y_data_T, label="Measured Data", color='black')
 plt.title("Electron Temperature (T_e) Fits")
 plt.xlabel("Pressure (Pa)")
 plt.ylabel("T_e (eV)")
@@ -136,10 +170,9 @@ plt.grid()
 # Electric field (E)
 
 plt.subplot(3, 1, 3)
-
 for fit_name, result in fit_results.items():
     plt.plot(pressure_fit_range, result["E_fit"], label=f"{fit_name} Fit")
-plt.scatter(x_data_n, y_data_E, label="Measured Data", color='black')
+plt.scatter(x_data, y_data_E, label="Measured Data", color='black')
 plt.title("Electric Field (E) Fits")
 plt.xlabel("Pressure (Pa)")
 plt.ylabel("E (V/cm)")
@@ -149,3 +182,9 @@ plt.grid()
 
 plt.tight_layout()
 plt.show()
+
+#
+
+store_fitted_data(fit_results, current, pressure_fit_range, file_name="argon_params.json")
+
+#end
