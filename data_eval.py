@@ -13,7 +13,7 @@ from scipy.optimize import curve_fit
 
 #%% v mean plots
 
-json_folder = "json_files/Argon/1mA"
+json_folder = "json_files/Neon/1p5mA"
 # json_folder = "json_files/Argon/"
 file_list = [os.path.join(json_folder, img) for img in os.listdir(json_folder) if img.endswith(".json")]
 
@@ -24,7 +24,7 @@ for file in file_list:
     dataset.append(json_data)
 
 
-if json_folder.split('/')[1] == 'Argon':
+if json_folder.split('/')[1] == 'Argon' or json_folder.split('/')[1] == 'Neon':
     v_mean_pos = np.array(())
     pressure_pos = np.array(())
     v_error_pos = np.array(())
@@ -44,24 +44,6 @@ if json_folder.split('/')[1] == 'Argon':
             v_mean_neg = np.append(v_mean_neg, np.mean(vel)*1000)
             v_error_neg = np.append(v_error_neg, np.std(np.array(vel))*1000)
             pressure_neg = np.append(pressure_neg, data['pressure'])
-else:
-    v_mean = np.array(())
-    pressure = np.array(())
-    v_error = np.array(())
-    
-    for data in dataset:
-        vel = data['velocity']
-        v_mean = np.append(v_mean, np.mean(vel))
-        v_error = np.append(v_error, np.std(np.array(vel)))
-        pressure = np.append(pressure, data['pressure'])
-    
-    v_mean_pos = v_mean[1::2]*1000
-    v_error_pos = v_error[1::2]*1000
-    pressure_pos = pressure[1::2]
-    
-    v_mean_neg = v_mean[0::2]*1000
-    v_error_neg = v_error[0::2]*1000
-    pressure_neg = pressure[0::2]
 
 # Define the fitting model: v = c1 * p**(-1) + c2 * p**(-2) + c3 * p**(-3)
 def inverse_power_model(p, c0, c1, c2, c3):
@@ -76,7 +58,7 @@ popt_neg, pcov_neg = curve_fit(inverse_power_model, pressure_neg, v_mean_neg, si
 c0_neg, c1_neg, c2_neg, c3_neg = popt_neg
 
 # Generate a smooth line for plotting the fit
-pressure_range = np.linspace(13, 120, 500)  # Start from 0.1 to avoid division by zero
+pressure_range = np.linspace(17, 120, 500)  # Start from 0.1 to avoid division by zero
 fit_pos = inverse_power_model(pressure_range, *popt_pos)
 fit_neg = inverse_power_model(pressure_range, *popt_neg)
 
@@ -99,4 +81,5 @@ plt.grid(color='gray', linestyle='-', linewidth=0.2)
 plt.title(str(json_folder.split('/')[1]) + ' ' + str(json_folder.split('/')[2]))
 plt.legend(loc='upper right')
 plt.xlim(0, 130)
+plt.ylim(0, 55)
 plt.show()

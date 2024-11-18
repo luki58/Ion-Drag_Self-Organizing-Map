@@ -28,8 +28,8 @@ unet = tf.keras.models.load_model("unet_mixedfloat16.h5", compile=False)
 #%%
 #Set directory/files of particle images and background
 #
-background_file = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM1_AVI_231006_Background/frame_0000.bmp'
-image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/Argon_3mu/VM1_AVI_231006_130519_80Pa_1mA/neg/'
+#background_file = 'C://Users/Lukas/Documents/GitHub/Make_BMP/VM2_AVI_240124_133031_Background/frame_0000.bmp'
+image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/Neon_3mu/VM1_AVI_231005_120639_70pa_1p5mA/pos/'
 #
 # Variable to control how often to plot
 plot_interval = 5  # Change this to 10 if you want to plot every 10th image
@@ -69,18 +69,6 @@ def apply_gabor_filter(image, frequency):
     filtered_real = (filtered_real - filtered_real.min()) / (filtered_real.max() - filtered_real.min()) * 255
     return filtered_real.astype(np.uint8)
 
-def normalize_brightness(image, min_brightness, max_brightness):
-    # Ensure the image is a numpy array
-    image = np.array(image).astype(np.float32)
-
-    # Normalize the image to [0, 1] range
-    image_normalized = (image - np.min(image)) / (np.max(image) - np.min(image))
-
-    # Scale the image to [min_brightness, max_brightness] range
-    normalized_image = image_normalized * (max_brightness - min_brightness) + min_brightness
-
-    return np.clip(normalized_image, min_brightness, max_brightness).astype(np.uint8)
-
 def scale_image_with_threshold(image, min_threshold, max_threshold):
     """
     Scales the image pixel values to the range 0 - 255 and applies the given min/max thresholds.
@@ -104,46 +92,23 @@ def scale_image_with_threshold(image, min_threshold, max_threshold):
     
     return scaled_image
 
-def enhance_contrast_clahe(image, filter_kernel):
+def combined_enhancement(image, filter_kernel=5, noise_threshold=12):
     """
-    Enhance the contrast using CLAHE (Contrast Limited Adaptive Histogram Equalization).
-    This method improves local contrast and avoids over-amplifying noise.
+    Combine CLAHE, noise reduction, and sharpening for enhanced particle detection.
     """
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(filter_kernel, filter_kernel))
-    enhanced_image = clahe.apply(image)
-
-    return enhanced_image   
- 
-def sharpen_image(image, filter_kernel):
-    """
-    Apply sharpening filter to enhance the edges and details of the image.
-    """
-    kernel = np.array([[0, -1, 0], 
-                       [-1, 8,-1], 
-                       [0, -1, 0]])  # Simple sharpening kernel
-    sharpened_image = cv2.filter2D(image, -1, kernel)
-
-    return sharpened_image
-    
-def combined_enhancement(image, background, frequency=8.0, filter_kernel = 9):
-    """
-    Combine CLAHE and sharpening for enhanced particle detection.
-    """
-    min_brightness_var = 8
-    max_brightness_var = 20
+    min_brightness_var = 11
+    max_brightness_var = 14
     normalized_image = scale_image_with_threshold(image, min_threshold=min_brightness_var, max_threshold=max_brightness_var)
-    #normalized_background = normalize_brightness(background, min_brightness=min_brightness_var, max_brightness=max_brightness_var)
-    #normalized = normalized_image - (normalized_background*0.25)
-    #clahe_image = enhance_contrast_clahe(normalized_image, filter_kernel)
-    #gabor_image = apply_gabor_filter(normalized_image, frequency)
-    #sharpened_image = sharpen_image(gabor_image, filter_kernel)
-    plt.imshow(normalized_image)
     
-    return normalized_image
+    # Apply a median filter to reduce noise (remove isolated pixels)
+    denoised_image = cv2.medianBlur(normalized_image, ksize=filter_kernel)
+    
+    # Remove remaining noise by setting pixels below the noise threshold to zero
+    denoised_image[denoised_image < noise_threshold] = 0
+   
+    return denoised_image
 
 #%%
-background = np.array(Image.open(background_file))
-
 image_files = [os.path.join(image_folder, img) for img in os.listdir(image_folder) if img.endswith(".bmp")]
 image_files.sort()
 
@@ -153,13 +118,14 @@ if not os.path.exists(particle_folder):
 
 for idx, filename in enumerate(image_files):
     image = np.array(Image.open(filename))
-    if image_folder[52:55]=='VM1':
+    if image_folder[51:54]=='VM1':
         target_size = (1600, 264)  # (width, height)
         resized_image = cv2.resize(image, target_size, interpolation=cv2.INTER_LINEAR)
-        resized_background = cv2.resize(np.array(background), (1600, 264), interpolation=cv2.INTER_LINEAR)
+    else:
+        resized_image = image
     # Enhance the image before U-Net processing
-    enhanced_image = combined_enhancement(resized_image, resized_background)
-    image_tensor = np.expand_dims(resized_image, axis=0)
+    enhanced_image = combined_enhancement(resized_image)
+    image_tensor = np.expand_dims(enhanced_image, axis=0)
     image_tensor = np.expand_dims(image_tensor, axis=-1)#/255
     unet_result = unet(image_tensor)
     particle_mask = unet_result[0, :, :, 0]>0.99

@@ -24,20 +24,20 @@ pixelsize = 14.7e-6
 
 #%% inputs
 # SOM params
-alpha = 0.01
+alpha = 0.0125
 distance_threshold = 50
 startradius = 100
 endradius = 0.5
-iterations = 45
+iterations = 30
 epsilon = 3.5
 # Tracing
-min_length = 4
+min_length = 3
 
 # set to True to save data to json
 save = True
 
 # Set directory/files of particle images and background (data folder requires calculated particle positions)
-image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/Argon_3mu/VM1_AVI_231006_130519_80Pa_1mA/neg/'
+image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/Neon_3mu/VM1_AVI_231005_120639_70pa_1p5mA/pos/'
 #image_folder = 'VM1_AVI_231006_130201_90Pa_1mA/pos/'
 
 particle_folder = image_folder[:-1] + '_positions/' #create folder for positions
@@ -103,17 +103,18 @@ y_coords = most_coords[:,1]
 
 #%%
 # velocity calculation 
+bigplot = True
 
 # Define deviation and corridor parameters
-max_deviation_y = 0.018  # For example, particles can deviate by 0.1 = 10% of x direction in y
-y_corridor_min = 40  # Lower bound of the corridor in y-axis
-y_corridor_max = 175   # Upper bound of the corridor in y-axis
+max_deviation_y = 0.02  #0.018  # For example, particles can deviate by 0.1 = 10% of x direction in y
+y_corridor_min = 0  # Lower bound of the corridor in y-axis
+y_corridor_max = 55   # Upper bound of the corridor in y-axis
 
 
 # Parameters for particle selection
-percentage = .8  # Percentage of particles to consider (e.g., 0.5 means 50%) or not if second_half
-range_selection = 'first_half'  # Choose between 'first_half' or 'second_half'; select area "split"
-split_percentege = .80 # !> percentage
+percentage = 0  # Percentage of particles to consider (e.g., 0.5 means 50%) or not if second_half
+range_selection = 'second_half'  # Choose between 'first_half' or 'second_half'; select area "split"
+split_percentege = .9 # !> percentage
 
 # Get the list of all particle IDs
 all_particle_ids = filtered_particles['particle_id'].unique().astype(int)
@@ -136,8 +137,9 @@ else:
     raise ValueError("range_selection must be either 'first_half' or 'second_half'.")
 
 eval_df = pd.DataFrame(columns=['avx', 'avy', 'avdxy', 'id', 'frame'])    
-frame_calc = 4 #number of frames to calc. v
+frame_calc = 3 #number of frames to calc. v
 min_movement = 0.001 #minimum movement being captured
+max_movement = 1.006
 i = 0
 
 if image_folder.split('/')[8][:3] == 'VM1':
@@ -169,7 +171,7 @@ for pid in selected_particle_ids:
         if y_deviation_actual <= y_deviation_allowed:
             # Check if within the corridor limits
             if y_corridor_min <= avg_y <= y_corridor_max:
-                if np.mean(dxy[1:]) > min_movement:
+                if np.mean(dxy[1:]) > min_movement and np.mean(dxy[1:]) < max_movement:
                     eval_df.loc[i, 'id'] = pid
                     eval_df.loc[i, 'avx'] = avg_x
                     eval_df.loc[i, 'avy'] = avg_y
@@ -192,17 +194,18 @@ eval_df = eval_df.astype({'avx':float,'avy':float,'avdxy':float, 'id':int, 'fram
 title = 'alpha=%.4f, iter.=%d, eps.=%d,'%(alpha, iterations, epsilon)
 
 # particle traces
-trace_df = filtered_particles
-plt.figure(dpi=300)
-for ids in trace_df['particle_id']:
-    trace_slice = trace_df.loc[filtered_particles['particle_id']==ids]
-    trace_slice = trace_slice.sort_values('frame_number')
-    plt.plot(trace_slice['x'], trace_slice['y'])
-plt.xlim(0,1600)
-#plt.ylim(0,600)
-plt.title(title)
-plt.suptitle(image_folder.split('_')[-2] + ' | '  +image_folder.split('_')[-1])
-plt.show()
+if bigplot == True:
+    trace_df = filtered_particles
+    plt.figure(dpi=300)
+    for ids in trace_df['particle_id']:
+        trace_slice = trace_df.loc[filtered_particles['particle_id']==ids]
+        trace_slice = trace_slice.sort_values('frame_number')
+        plt.plot(trace_slice['x'], trace_slice['y'])
+    plt.xlim(0,1600)
+    plt.ylim(0,600)
+    plt.title(title)
+    plt.suptitle(image_folder.split('_')[-2] + ' | '  +image_folder.split('_')[-1])
+    plt.show()
 
 xyz_df = eval_df.sort_values('avx')
 xyz_df = xyz_df.sort_values('frame')

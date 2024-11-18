@@ -26,7 +26,7 @@ pixelsize = 14.7e-6
 distance_threshold = 20
 startradius = 100
 endradius   = 0.5
-iterations  = 40
+iterations  = 45
 epsilon     = 4
 
 #bayes opt. inputs
