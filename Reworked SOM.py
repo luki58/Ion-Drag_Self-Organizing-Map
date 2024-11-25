@@ -24,11 +24,11 @@ pixelsize = 14.7e-6
 
 #%% inputs
 # SOM params
-alpha = 0.0125
+alpha = 0.01
 distance_threshold = 50
 startradius = 100
 endradius = 0.5
-iterations = 30
+iterations = 20
 epsilon = 3.5
 # Tracing
 min_length = 3
@@ -37,7 +37,7 @@ min_length = 3
 save = True
 
 # Set directory/files of particle images and background (data folder requires calculated particle positions)
-image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/Neon_3mu/VM1_AVI_231005_120639_70pa_1p5mA/pos/'
+image_folder = 'C://Users/Lukas/Documents/GitHub/Make_BMP/Neon_3mu/VM1_AVI_240125_144101_23Pa_1p5mA/neg/'
 #image_folder = 'VM1_AVI_231006_130201_90Pa_1mA/pos/'
 
 particle_folder = image_folder[:-1] + '_positions/' #create folder for positions
@@ -108,7 +108,7 @@ bigplot = True
 # Define deviation and corridor parameters
 max_deviation_y = 0.02  #0.018  # For example, particles can deviate by 0.1 = 10% of x direction in y
 y_corridor_min = 0  # Lower bound of the corridor in y-axis
-y_corridor_max = 55   # Upper bound of the corridor in y-axis
+y_corridor_max = 255   # Upper bound of the corridor in y-axis
 
 
 # Parameters for particle selection
