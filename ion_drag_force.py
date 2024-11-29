@@ -80,18 +80,29 @@ def e_field(x, I):
     return poly1d_fn(x)
 
 # Variable Parameters
-gas_type = "Neon" #or "Neon"
-I = 1  # mA
-polarity = "pos" #pos or neg
+gas_type = "Argon" #or "Neon"
+I = 1.5  # mA
+polarity = "neg" #pos or neg
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
-    E_multiplier = 1.1
-    ne_multiplier = 0.8
+    E_multiplier = .7
+    ne_multiplier = 1.3
+    theory = 2
 elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
-    E_multiplier = 0.9
-    ne_multiplier = 0.9
+    E_multiplier = .5
+    ne_multiplier = 1.1
+    theory = 2
+elif gas_type == "Argon" and I == 1 and polarity == "pos":
+    E_multiplier = .8
+    ne_multiplier = 1.
+    theory = 1
+elif gas_type == "Argon" and I == 1 and polarity == "neg":
+    E_multiplier = 1.
+    ne_multiplier = 1.3
+    theory = 1
 else:
     E_multiplier = 1.
     ne_multiplier = 1.
+    theory = 1
     
 selected_current = str(I)+"mA"
 #
@@ -106,8 +117,13 @@ else:
     epstein = [1.26] * len(p)  # Neutral damping Epstein coefficient NEON = 1.44; ARGON = 1.26!
     
 a = (3.4 / 2) * 10**(-6)  # Micrometer particle radius
-n_d = np.array([.5] * len(p)) * 10**11  #? Dust number density in m^-3; not sure about this value
 
+if gas_type == "Argon" and I == 1.5:
+    n_d = np.array([.1] * len(p)) * 10**11  #? Dust number density in m^-3; not sure about this value
+elif gas_type == "Argon" and I == 1:
+    n_d = np.array([.2] * len(p)) * 10**11
+else:
+    n_d = np.array([.001] * len(p)) * 10**11
 # Extract the data for the selected current
 try:
     E_0_argon, T_e_argon, n_e0_argon = extract_plasma_data(data, selected_current, p)
@@ -136,7 +152,7 @@ if gas_type == "Neon":
     v_tn = np.sqrt(8 * k * T_n * eV_K / (np.pi * m_neon))
     v_ti = np.sqrt(8 * k * T_i / (np.pi * m_neon))
     Z_d = 4 * np.pi * epsilon_0 * k * T_e * eV_K * a * z / (e**2)
-    n_i0 = n_e0#np.add(n_e0, np.multiply(Z_d, n_d))
+    n_i0 = n_e0 #np.add(n_e0, np.multiply(Z_d, n_d))
 else:
     v_tn = np.sqrt(8 * k * T_n * eV_K / (np.pi * m_argon))
     v_ti = np.sqrt(8 * k * T_i / (np.pi * m_argon))
@@ -160,8 +176,13 @@ def integration_function(x, debye_Di_val, roh_0_val):
 
 roh_0 = np.divide(Z_d , T_i) * e**2 / (4 * np.pi * epsilon_0 * k)
 
+
 '''    Scattering Parameter, Khrapak DOI: 10.1103/PhysRevE.66.046414     '''
 beta_T = roh_0/debye_Di
+beta_T2 = np.divide(Z_d * e**2, T_i) / (4 * np.pi * epsilon_0 * k * debye_D)
+
+roh_star = debye_D * np.log(beta_T)
+
 
 #
 integrated_f = np.array([
@@ -194,7 +215,11 @@ if gas_type == "Neon":
     #F_i = np.multiply(n_i0,((2*np.sqrt(2*np.pi))/3)) * m_neon * (v_ti) * (u_i) * (roh_0**2 * integrated_f)
 else:
     F_e = Z_d * e * E_0_argon
-    F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3) * m_argon * (v_ti) * (u_i) * (a**2 + a*roh_0/2 +(roh_0**2) * integrated_f/4))
+    if theory == 1:
+        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3) * m_argon * (v_ti) * (u_i) * (a**2 + a*roh_0/2 +(roh_0**2) * integrated_f/4))
+    elif theory == 2:
+        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3)) * m_argon * (v_ti) * (u_i) * (roh_star**2)
+    #F_i = np.multiply(n_i0,((4*np.sqrt(2*np.pi))/3)) * m_argon * (v_ti) * (u_i) * (roh_0**2 * integrated_f)
 
 # Particle velocity
 if gas_type == "Neon":
@@ -211,14 +236,14 @@ def inverse_power_model(p, c0, c1, c2, c3):
 
 # Perform curve fitting for the velocity-pressure relationship
 try:
-    popt, pcov = curve_fit(inverse_power_model, p, (v_d * -1000), sigma=2, absolute_sigma=True)
+    popt, pcov = curve_fit(inverse_power_model, p, (v_d * -1000), absolute_sigma=True) #, sigma=2
     c0, c1, c2, c3 = popt
 except RuntimeError as e:
     print(f"Curve fitting failed: {e}")
     popt, pcov = [0, 0, 0, 0], None
 
 # Generate a smooth line for plotting the fit
-pressure_range = np.linspace(15, 120, 500)  # Generate pressure range for smooth fit line
+pressure_range = np.linspace(12, 120, 500)  # Generate pressure range for smooth fit line
 fit = inverse_power_model(pressure_range, *popt)
 
 # Plot the results

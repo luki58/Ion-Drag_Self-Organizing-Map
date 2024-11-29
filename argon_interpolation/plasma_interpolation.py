@@ -11,7 +11,7 @@ from scipy.optimize import curve_fit
 import json
 import os
 
-def store_fitted_data(fit_results, current, pressure_fit_range, fit = "Logarithmic" , file_name="argon_params.json"):
+def store_fitted_data(fit_results, current, pressure_fit_range, fit = "Power Law" , file_name="argon_params.json"):
     """Parameters:
     - fit_results: Dictionary containing the fitted data for n, T, E.
     - current: Discharge current (e.g., "1mA", "2mA").
@@ -21,7 +21,7 @@ def store_fitted_data(fit_results, current, pressure_fit_range, fit = "Logarithm
     # Prepare data to store
     current_data = {
         "Pressure (Pa)": list(pressure_fit_range),
-        "n": list(fit_results[fit]["n_fit"]),
+        "n": list(fit_results["Linear"]["n_fit"]),
         "T": list(fit_results[fit]["T_fit"]),
         "E": list(fit_results[fit]["E_fit"])
     }
@@ -55,7 +55,7 @@ def plot_stored_data(data_points_topolot, file_name="argon_params.json"):
         return
     
     # Initialize subplots
-    plt.figure(figsize=(16, 12), dpi=400)
+    plt.figure(figsize=(10, 7), dpi=600)
 
     # Colors for plotting
     colors = plt.cm.viridis(np.linspace(0, 1, len(data)))
@@ -66,11 +66,11 @@ def plot_stored_data(data_points_topolot, file_name="argon_params.json"):
         pressure = np.array(current_data["Pressure (Pa)"])
         n_e = np.array(current_data["n"])
         plt.plot(pressure, n_e, label=f"{current}", color=colors[i])
-    plt.title("Electron Density (n_e)")
+    plt.title("Electron Density ($n_e$)")
     plt.xlabel("Pressure (Pa)")
-    plt.ylabel("n_e (10^8 cm^-3)")
+    plt.ylabel("$n_e$ (10^8 cm^-3)")
     plt.legend()
-    plt.grid()
+    plt.grid(color='grey', linestyle='--', linewidth=0.4, alpha=0.5)
 
     # Subplot 2: Electron Temperature (T)
     plt.subplot(3, 1, 2)
@@ -78,11 +78,11 @@ def plot_stored_data(data_points_topolot, file_name="argon_params.json"):
         pressure = np.array(current_data["Pressure (Pa)"])
         T_e = np.array(current_data["T"])
         plt.plot(pressure, T_e, label=f"{current}", color=colors[i])
-    plt.title("Electron Temperature (T_e)")
+    plt.title("Electron Temperature ($T_e$)")
     plt.xlabel("Pressure (Pa)")
-    plt.ylabel("T_e (eV)")
+    plt.ylabel("$T_e$ (eV)")
     plt.legend()
-    plt.grid()
+    plt.grid(color='grey', linestyle='--', linewidth=0.4, alpha=0.5)
 
     # Subplot 3: Electric Field (E)
     plt.subplot(3, 1, 3)
@@ -96,7 +96,7 @@ def plot_stored_data(data_points_topolot, file_name="argon_params.json"):
     plt.xlabel("Pressure (Pa)")
     plt.ylabel("E (V/cm)")
     plt.legend()
-    plt.grid()
+    plt.grid(color='grey', linestyle='--', linewidth=0.4, alpha=0.5)
 
     # Adjust layout and show the plots
     plt.tight_layout()
@@ -128,10 +128,10 @@ argon_df = {
     "P_Pa": [10, 20, 40, 60],  # Pressures in Pascal
     "1mA_n": [2.81 , 4.43, 4.01, 3.26],  # Electron density (10^8 cm^-3) 10Pa = 2.81
     "1mA_T": [5.05, 4.8, 4.6, 4.4],  # MODEL DATA
-    "1mA_E": [1.58, 1.855, 2.395, 4.10],  # Electric field (V/cm)
+    "1mA_E": [1.58, 2.155, 2.95, 3.610],  # Electric field (V/cm) #CORRECTED
     "2mA_n": [7.43, 8.14, 6.22],  # Electron density (10^8 cm^-3) 20 - 40 Pa
     "2mA_T": [5.1, 4.78, 4.6],  # MODEL DATA
-    "2mA_E": [3.2, 3.4, 4.4],  # MODEL DATA
+    "2mA_E": [3.6, 3.9, 4.1],  # MODEL DATA
 }
 
 data_points_topolot_T = [[4.13, 4.555, 4.795, 5.23],[4.94, 5.08, 4.37]] #"1mA_T" & "2mA_T" # Electron temperature (eV)
@@ -203,7 +203,7 @@ if 'p' in current:
     current = current.replace('p', '.')
 
 # Visualize the fits
-plt.figure(figsize=(16, 12), dpi=400)
+plt.figure(figsize=(8, 6), dpi=300)
 
 # Electron density (n_e)
 plt.subplot(3, 1, 1)

@@ -13,7 +13,7 @@ from scipy.optimize import curve_fit
 
 #%% v mean plots
 
-json_folder = "json_files/Argon/1p5mA"
+json_folder = "json_files/Neon/1p5mA"
 # json_folder = "json_files/Argon/"
 file_list = [os.path.join(json_folder, img) for img in os.listdir(json_folder) if img.endswith(".json")]
 
@@ -60,7 +60,7 @@ popt_neg, pcov_neg = curve_fit(inverse_power_model, pressure_neg, v_mean_neg, si
 c0_neg, c1_neg, c2_neg, c3_neg = popt_neg
 
 # Generate a smooth line for plotting the fit
-pressure_range = np.linspace(13, 120, 500)  # Start from 0.1 to avoid division by zero
+pressure_range = np.linspace(12, 120, 500)  # Start from 0.1 to avoid division by zero
 fit_pos = inverse_power_model(pressure_range, *popt_pos)
 fit_neg = inverse_power_model(pressure_range, *popt_neg)
 
@@ -134,8 +134,9 @@ i=0
 for file in os.listdir(path):
     json_file = open(path+file, 'r')
     json_data = json.load(json_file)
-    plt.errorbar(p, np.array(json_data["pos"]["z"]), yerr=.01, fmt='d', color=color_list[i], label='z ' + file.split('_')[0].split('.')[0], linewidth=.7, markersize=3, capsize=2, mfc='w', ecolor='black')
-    i+=1
+    if file.split('_')[1].split('.')[0] == "1mA":
+        plt.errorbar(p, np.array(json_data["pos"]["z"]), yerr=.01, fmt='d', color=color_list[i], label='z ' + file.split('_')[0].split('.')[0], linewidth=.7, markersize=3, capsize=2, mfc='w', ecolor='black')
+        i+=1
 # Labels, title, and legend
 plt.xlabel('Pressure [Pa]')
 plt.ylabel('z')
