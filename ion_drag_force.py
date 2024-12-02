@@ -83,25 +83,38 @@ def e_field(x, I):
 gas_type = "Argon" #or "Neon"
 I = 1.5  # mA
 polarity = "neg" #pos or neg
+
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
-    E_multiplier = .7
+    E_multiplier = 1.
     ne_multiplier = 1.3
     theory = 2
 elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
-    E_multiplier = .5
+    E_multiplier = .75
     ne_multiplier = 1.1
     theory = 2
 elif gas_type == "Argon" and I == 1 and polarity == "pos":
-    E_multiplier = .8
-    ne_multiplier = 1.
+    E_multiplier = 1.
+    ne_multiplier = .6
     theory = 1
 elif gas_type == "Argon" and I == 1 and polarity == "neg":
     E_multiplier = 1.
-    ne_multiplier = 1.3
+    ne_multiplier = .6
+    theory = 1
+elif gas_type == "Neon" and I == 1 and polarity == "neg":
+    E_multiplier = 1.25
+    ne_multiplier = 1.15
+    theory = 1
+elif gas_type == "Neon" and I == 1 and polarity == "pos":
+    E_multiplier = .8
+    ne_multiplier = .95
+    theory = 1
+elif gas_type == "Neon" and I == 1.5 and polarity == "neg":
+    E_multiplier = 1.2
+    ne_multiplier = .8
     theory = 1
 else:
-    E_multiplier = 1.
-    ne_multiplier = 1.
+    E_multiplier = .8
+    ne_multiplier = .6
     theory = 1
     
 selected_current = str(I)+"mA"
@@ -119,15 +132,16 @@ else:
 a = (3.4 / 2) * 10**(-6)  # Micrometer particle radius
 
 if gas_type == "Argon" and I == 1.5:
-    n_d = np.array([.1] * len(p)) * 10**11  #? Dust number density in m^-3; not sure about this value
+    n_d = np.array([.01] * len(p)) * 10**11  #? Dust number density in m^-3; not sure about this value
 elif gas_type == "Argon" and I == 1:
     n_d = np.array([.2] * len(p)) * 10**11
 else:
-    n_d = np.array([.001] * len(p)) * 10**11
+    n_d = np.array([.1] * len(p)) * 10**11
 # Extract the data for the selected current
 try:
     E_0_argon, T_e_argon, n_e0_argon = extract_plasma_data(data, selected_current, p)
     E_0_argon = np.multiply(E_0_argon, -100*E_multiplier)  # V/m
+    n_e0_argon = n_e0_argon * ne_multiplier
 except ValueError as error_data:
     print(error_data)
 
@@ -157,7 +171,7 @@ else:
     v_tn = np.sqrt(8 * k * T_n * eV_K / (np.pi * m_argon))
     v_ti = np.sqrt(8 * k * T_i / (np.pi * m_argon))
     Z_d = 4 * np.pi * epsilon_0 * k * T_e_argon * eV_K * a * z / (e**2)
-    n_i0 = np.add(n_e0, np.multiply(Z_d, n_d))
+    n_i0 = np.add(n_e0_argon, np.multiply(Z_d, n_d))
 
 # Debye lengths
 if gas_type == "Neon":
@@ -211,7 +225,10 @@ else:
 # Electric and ion drag forces
 if gas_type == "Neon":
     F_e = Z_d * e * E_0
-    F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3) * m_neon * (v_ti) * (u_i) * (a**2 + a*roh_0/2 +(roh_0**2) * integrated_f/4))
+    if theory == 1:
+        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3) * m_neon * (v_ti) * (u_i) * (a**2 + a*roh_0/2 +(roh_0**2) * integrated_f/4))
+    elif theory == 2:
+        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3)) * m_neon * (v_ti) * (u_i) * (roh_star**2)
     #F_i = np.multiply(n_i0,((2*np.sqrt(2*np.pi))/3)) * m_neon * (v_ti) * (u_i) * (roh_0**2 * integrated_f)
 else:
     F_e = Z_d * e * E_0_argon
@@ -243,7 +260,11 @@ except RuntimeError as e:
     popt, pcov = [0, 0, 0, 0], None
 
 # Generate a smooth line for plotting the fit
-pressure_range = np.linspace(12, 120, 500)  # Generate pressure range for smooth fit line
+# Generate a smooth line for plotting the fit
+if gas_type == 'Argon':
+    pressure_range = np.linspace(12, 120, 500)  # Start from 0.1 to avoid division by zero
+else:
+    pressure_range = np.linspace(19, 120, 500)  # Start from 0.1 to avoid division by zero
 fit = inverse_power_model(pressure_range, *popt)
 
 # Plot the results
@@ -286,7 +307,8 @@ if gas_type == "Neon":
         "E_0": E_0.tolist(),
         "T_e": T_e.tolist(),
         "n_e0": n_e0.tolist(),
-        "z": z
+        "z": z,
+        "beta_T": beta_T.tolist()
         }
     }
 else:
@@ -300,7 +322,8 @@ else:
         "E_0": E_0_argon.tolist(),
         "T_e": T_e_argon.tolist(),
         "n_e0": n_e0_argon.tolist(),
-        "z": z
+        "z": z,
+        "beta_T": beta_T.tolist()
         }
     }
 

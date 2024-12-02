@@ -11,7 +11,7 @@ from scipy.optimize import curve_fit
 import json
 import os
 
-def store_fitted_data(fit_results, current, pressure_fit_range, fit = "Power Law" , file_name="argon_params.json"):
+def store_fitted_data(fit_results, current, pressure_fit_range, fit = "Logarithmic" , file_name="argon_params.json"):
     """Parameters:
     - fit_results: Dictionary containing the fitted data for n, T, E.
     - current: Discharge current (e.g., "1mA", "2mA").
@@ -21,7 +21,7 @@ def store_fitted_data(fit_results, current, pressure_fit_range, fit = "Power Law
     # Prepare data to store
     current_data = {
         "Pressure (Pa)": list(pressure_fit_range),
-        "n": list(fit_results["Linear"]["n_fit"]),
+        "n": list(fit_results["Power Law"]["n_fit"]* (10)**14),
         "T": list(fit_results[fit]["T_fit"]),
         "E": list(fit_results[fit]["E_fit"])
     }
@@ -68,7 +68,7 @@ def plot_stored_data(data_points_topolot, file_name="argon_params.json"):
         plt.plot(pressure, n_e, label=f"{current}", color=colors[i])
     plt.title("Electron Density ($n_e$)")
     plt.xlabel("Pressure (Pa)")
-    plt.ylabel("$n_e$ (10^8 cm^-3)")
+    plt.ylabel("$n_e [m^{-3}]$ ")
     plt.legend()
     plt.grid(color='grey', linestyle='--', linewidth=0.4, alpha=0.5)
 
@@ -122,8 +122,6 @@ def power_law_model(x, a, b):
 def logarithmic_model(x, a, b):
     return a * np.log(x) + b
 
-
-
 argon_df = {
     "P_Pa": [10, 20, 40, 60],  # Pressures in Pascal
     "1mA_n": [2.81 , 4.43, 4.01, 3.26],  # Electron density (10^8 cm^-3) 10Pa = 2.81
@@ -136,7 +134,8 @@ argon_df = {
 
 data_points_topolot_T = [[4.13, 4.555, 4.795, 5.23],[4.94, 5.08, 4.37]] #"1mA_T" & "2mA_T" # Electron temperature (eV)
 
-data_points_topolot = [[1.58, 1.855, 2.395, 4.10],[2.0, 2.53, 4.38]]
+data_points_topolot = [[1.58, 1.855, 2.395, 4.10],[2.0, 2.53, 4.38]] #Electric field (V/cm)
+
 # Fit models to the data and evaluate fits for 1mA
 
 current = "1p5mA"

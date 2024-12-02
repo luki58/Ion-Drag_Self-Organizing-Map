@@ -13,7 +13,7 @@ from scipy.optimize import curve_fit
 
 #%% v mean plots
 
-json_folder = "json_files/Neon/1p5mA"
+json_folder = "json_files/Argon/1mA"
 # json_folder = "json_files/Argon/"
 file_list = [os.path.join(json_folder, img) for img in os.listdir(json_folder) if img.endswith(".json")]
 
@@ -60,7 +60,10 @@ popt_neg, pcov_neg = curve_fit(inverse_power_model, pressure_neg, v_mean_neg, si
 c0_neg, c1_neg, c2_neg, c3_neg = popt_neg
 
 # Generate a smooth line for plotting the fit
-pressure_range = np.linspace(12, 120, 500)  # Start from 0.1 to avoid division by zero
+if json_folder.split('/')[1] == 'Argon':
+    pressure_range = np.linspace(12, 120, 500)  # Start from 0.1 to avoid division by zero
+else:
+    pressure_range = np.linspace(19, 120, 500)  # Start from 0.1 to avoid division by zero
 fit_pos = inverse_power_model(pressure_range, *popt_pos)
 fit_neg = inverse_power_model(pressure_range, *popt_neg)
 
@@ -102,7 +105,7 @@ plt.xlim(0, 130)
 plt.show()
 
 #%%
-gas_type = "Argon"
+gas_type = "Neon"
 p = np.array([15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 120])  # Pa
 # Plotting ION-DRAG FORCE
 plt.figure(dpi=600)
@@ -126,7 +129,7 @@ plt.title(gas_type)
 plt.xlim(0, 130)
 plt.show()
 #%%
-# Plotting Charge Number
+# Plotting Charge Number z
 plt.figure(dpi=500)
 path = json_folder.split('/')[0] + "/theory/"
 color_list = ["b", "r", "g", "cyan"]
@@ -145,5 +148,115 @@ plt.legend(loc='upper right')
 plt.title(gas_type)
 plt.xlim(0, 130)
 plt.show()
-    
-    
+#%%
+# Load JSON files
+
+file_paths = [
+    "json_files/theory/Argon_1mA.json",
+    "json_files/theory/Argon_1p5mA.json",
+    "json_files/theory/Neon_1mA.json",
+    "json_files/theory/Neon_1p5mA.json"
+]
+
+data = {}
+for path in file_paths:
+    with open(path, 'r') as f:
+        data[path.split('/')[-1].replace('.json', '')] = json.load(f)
+
+# Example data structure, assuming T_e, n_e, and E are available in files
+pressures = np.array([15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 120])  # Pa
+
+# Correctly extract T_e, n_e0, and E_0 for plotting
+def extract_correct_params(data, keys):
+    params = {key: [] for key in keys}
+    for key in keys:
+        if key in data:
+            params[key] = data[key][:len(pressures)]  # Extracting data corresponding to pressures
+    return params
+
+# Updated keys for extraction
+keys = ["n_e0", "T_e", "E_0"]
+
+# Parse data for each dataset
+parsed_data_correct = {}
+for dataset_name, content in data.items():
+    parsed_data_correct[dataset_name] = {
+        "pos": extract_correct_params(content.get("pos", {}), keys),
+        "neg": extract_correct_params(content.get("neg", {}), keys)
+    }
+
+# Define the experimental data
+argon_df = {
+    "P_Pa": [10, 20, 40, 60],  # Pressures in Pascal
+    "1mA_n": [2.81, 4.43, 4.01, 3.26],  # Electron density (10^8 cm^-3)
+    "1mA_T": [4.13, 4.555, 4.795, 5.23],  # Temperature (eV)
+    "1mA_E": [1.58, 1.855, 2.395, 4.10],  # Electric field (V/cm)
+    "2mA_n": [np.nan, 7.43, 8.14, 6.22],  # Electron density (10^8 cm^-3)
+    "2mA_T": [np.nan, 4.94, 5.08, 4.37],  # Temperature (eV)
+    "2mA_E": [np.nan, 2.0, 2.53, 4.38],  # Electric field (V/cm)
+}
+
+# Plotting T_e, n_e0, and E_0 in separate subplots
+fig, axes = plt.subplots(3, 1, figsize=(12, 15), dpi=600)
+
+# Titles and y-labels for each subplot
+parameters = ["n_e0", "T_e", "E_0"]
+titles = [r"$n_{e0}$ vs Pressure", r"$T_e$ vs Pressure", r"$E_0$ vs Pressure"]
+y_labels = [r"$n_{e0}$ ($\mathrm{m^{-3}}$)", r"$T_e$ (eV)", r"$E_0$ ($\mathrm{V/m}$)"]
+
+# Plot each parameter in a separate subplot
+for i, param in enumerate(parameters):
+    ax = axes[i]
+    for dataset_name, dataset in parsed_data_correct.items():
+        for polarity, params in dataset.items():
+            linestyle = "solid" if polarity == "pos" else "dashed"
+            color = "orange" if "Argon" in dataset_name and param == "n_e0" else None  # Highlight Argon n_e0
+            ax.plot(
+                pressures, 
+                params[param], 
+                linestyle=linestyle, 
+                label=f"{param} ({polarity}, {dataset_name})",
+                color=color
+            )
+    # Add experimental data
+    if param == "T_e":
+        ax.scatter(argon_df["P_Pa"], argon_df["1mA_T"], color="blue", marker="o", label="1mA Experimental T_e")
+        ax.scatter(argon_df["P_Pa"], argon_df["2mA_T"], color="blue", marker="x", label="2mA Experimental T_e")
+    elif param == "n_e0":
+        ax.scatter(argon_df["P_Pa"], np.array(argon_df["1mA_n"])*(10)**14, color="green", marker="o", label="1mA Experimental n_e0")
+        ax.scatter(argon_df["P_Pa"], np.array(argon_df["2mA_n"])*(10)**14, color="green", marker="x", label="2mA Experimental n_e0")
+    elif param == "E_0":
+        ax.scatter(argon_df["P_Pa"], np.array(argon_df["1mA_E"])*(-100), color="red", marker="o", label="1mA Experimental E_0")
+        ax.scatter(argon_df["P_Pa"], np.array(argon_df["2mA_E"])*(-100), color="red", marker="x", label="2mA Experimental E_0")
+
+    ax.set_title(titles[i])
+    ax.set_xlabel("Pressure (Pa)")
+    ax.set_ylabel(y_labels[i])
+    ax.legend(loc="upper right", bbox_to_anchor=(1, 1))
+    ax.grid(True)
+
+plt.tight_layout()
+plt.show()
+#%%
+# Plotting scattering parameter \beta_T
+plt.figure(figsize=(5, 3), dpi=600)
+path = json_folder.split('/')[0] + "/theory/"
+color_list = ["b", "r", "g", "cyan"]
+i=0
+for file in os.listdir(path):
+    json_file = open(path+file, 'r')
+    json_data = json.load(json_file)
+    if file.split('_')[0].split('.')[0] == "Argon":
+        plt.errorbar(pressures, np.array(json_data["pos"]["beta_T"]), yerr=np.array(json_data["pos"]["beta_T"])*0.05, fmt='d', color=color_list[i], linewidth=.5, markersize=4, capsize=2, mfc='w', ecolor='black')
+        plt.errorbar(pressures, np.array(json_data["neg"]["beta_T"]), yerr=np.array(json_data["neg"]["beta_T"])*0.05, fmt='d', color=color_list[i], label=r'$\beta_T$ ' + file.split('_')[0].split('.')[0] + ' pos & neg', linewidth=.5, markersize=4, capsize=2, mfc='w', ecolor='black')
+        i+=1
+    else:
+        plt.errorbar(pressures, np.array(json_data["pos"]["beta_T"]), yerr=np.array(json_data["pos"]["beta_T"])*0.05, fmt='o', color=color_list[i], linewidth=.7, markersize=3, capsize=2, mfc='w', ecolor='black')
+        plt.errorbar(pressures, np.array(json_data["neg"]["beta_T"]), yerr=np.array(json_data["neg"]["beta_T"])*0.05, fmt='o', color=color_list[i], label=r'$\beta_T$ ' + file.split('_')[0].split('.')[0] + ' pos & neg', linewidth=.7, markersize=3, capsize=2, mfc='w', ecolor='black')
+        i+=1
+# Labels, title, and legend
+plt.xlabel('Pressure [Pa]')
+plt.ylabel(r'Scattering Parameter $\beta_T$')
+plt.grid(color='gray', linestyle='--', linewidth=0.2)
+plt.legend(loc='upper right')
+plt.show()
