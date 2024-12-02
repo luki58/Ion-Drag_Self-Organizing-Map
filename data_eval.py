@@ -130,7 +130,7 @@ plt.xlim(0, 130)
 plt.show()
 #%%
 # Plotting Charge Number z
-plt.figure(dpi=500)
+plt.figure(figsize=(5, 3), dpi=600)
 path = json_folder.split('/')[0] + "/theory/"
 color_list = ["b", "r", "g", "cyan"]
 i=0
@@ -145,7 +145,7 @@ plt.xlabel('Pressure [Pa]')
 plt.ylabel('z')
 plt.grid(color='gray', linestyle='--', linewidth=0.2)
 plt.legend(loc='upper right')
-plt.title(gas_type)
+#plt.title(gas_type)
 plt.xlim(0, 130)
 plt.show()
 #%%

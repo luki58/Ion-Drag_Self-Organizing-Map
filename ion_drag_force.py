@@ -193,7 +193,7 @@ roh_0 = np.divide(Z_d , T_i) * e**2 / (4 * np.pi * epsilon_0 * k)
 
 '''    Scattering Parameter, Khrapak DOI: 10.1103/PhysRevE.66.046414     '''
 beta_T = roh_0/debye_Di
-beta_T2 = np.divide(Z_d * e**2, T_i) / (4 * np.pi * epsilon_0 * k * debye_D)
+beta_T2 = np.divide(Z_d * e**2, (v_ti**2)*m_argon) / (4 * np.pi * epsilon_0 * debye_D)
 
 roh_star = debye_D * np.log(beta_T)
 
