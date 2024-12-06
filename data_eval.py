@@ -69,9 +69,9 @@ fit_neg = inverse_power_model(pressure_range, *popt_neg)
 
 print("Polynomials (POS): c0 = " + str(c0_pos) + ", c1 = " + str(c1_pos) + ", c2 = "+ str(c2_pos) + ", c3 = " + str(c3_pos))
 print("Polynomials (NEG): c0 = " + str(c0_neg) + ", c1 = " + str(c1_neg) + ", c2 = "+ str(c2_neg) + ", c3 = " + str(c3_pos))
-
+#%%
 # Plotting the results + FIT
-plt.figure(dpi=500)
+plt.figure(dpi=150)
 plt.errorbar(pressure_neg, v_mean_neg, yerr=v_error_neg, fmt='d', color='r', linewidth=1, markersize=3, capsize=2, mfc='w', ecolor='g', label='Negative Polarity')
 plt.errorbar(pressure_pos, v_mean_pos, yerr=v_error_pos, fmt='o', color='r', linewidth=1, markersize=3, capsize=2, mfc='w', ecolor='b', label='Positive Polarity')
 # Plot the nonlinear fit lines
@@ -86,9 +86,9 @@ plt.legend(loc='upper right')
 plt.xlim(0, 130)
 #plt.ylim(0, 40)
 plt.show()
-
+#%%
 # Plotting the results + Theory FIT
-plt.figure(dpi=500)
+plt.figure(dpi=150)
 plt.errorbar(pressure_neg, v_mean_neg, yerr=v_error_neg, fmt='d', color='r', linewidth=1, markersize=3, capsize=2, mfc='w', ecolor='g', label='Negative Polarity')
 plt.errorbar(pressure_pos, v_mean_pos, yerr=v_error_pos, fmt='o', color='r', linewidth=1, markersize=3, capsize=2, mfc='w', ecolor='b', label='Positive Polarity')
 # Plot the nonlinear fit lines
@@ -105,10 +105,10 @@ plt.xlim(0, 130)
 plt.show()
 
 #%%
-gas_type = "Neon"
+gas_type = "Argon"
 p = np.array([15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 120])  # Pa
 # Plotting ION-DRAG FORCE
-plt.figure(dpi=600)
+plt.figure(dpi=300)
 path = json_folder.split('/')[0] + "/theory/"
 for file in os.listdir(path):
     if file.split('_')[0] == gas_type:
@@ -130,7 +130,7 @@ plt.xlim(0, 130)
 plt.show()
 #%%
 # Plotting Charge Number z
-plt.figure(figsize=(5, 3), dpi=600)
+plt.figure(figsize=(5, 3), dpi=300)
 path = json_folder.split('/')[0] + "/theory/"
 color_list = ["b", "r", "g", "cyan"]
 i=0
@@ -197,7 +197,7 @@ argon_df = {
 }
 
 # Plotting T_e, n_e0, and E_0 in separate subplots
-fig, axes = plt.subplots(3, 1, figsize=(12, 15), dpi=600)
+fig, axes = plt.subplots(3, 1, figsize=(12, 15), dpi=300)
 
 # Titles and y-labels for each subplot
 parameters = ["n_e0", "T_e", "E_0"]
@@ -239,7 +239,7 @@ plt.tight_layout()
 plt.show()
 #%%
 # Plotting scattering parameter \beta_T
-plt.figure(figsize=(5, 3), dpi=600)
+plt.figure(figsize=(5, 3), dpi=300)
 path = json_folder.split('/')[0] + "/theory/"
 color_list = ["b", "r", "g", "cyan"]
 i=0

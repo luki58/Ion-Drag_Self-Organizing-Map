@@ -81,7 +81,7 @@ def e_field(x, I):
 
 # Variable Parameters
 gas_type = "Argon" #or "Neon"
-I = 1.5  # mA
+I = 1  # mA
 polarity = "neg" #pos or neg
 
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
@@ -93,7 +93,7 @@ elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
     ne_multiplier = 1.1
     theory = 2
 elif gas_type == "Argon" and I == 1 and polarity == "pos":
-    E_multiplier = 1.
+    E_multiplier = .9
     ne_multiplier = .6
     theory = 1
 elif gas_type == "Argon" and I == 1 and polarity == "neg":
