@@ -138,7 +138,7 @@ for file in os.listdir(path):
     json_file = open(path+file, 'r')
     json_data = json.load(json_file)
     if file.split('_')[1].split('.')[0] == "1mA":
-        plt.errorbar(p, np.array(json_data["pos"]["z"]), yerr=.01, fmt='d', color=color_list[i], label='z ' + file.split('_')[0].split('.')[0], linewidth=.7, markersize=3, capsize=2, mfc='w', ecolor='black')
+        plt.errorbar(p, np.array(json_data["pos"]["z"]), yerr=.1, fmt='d', color=color_list[i], label='z ' + file.split('_')[0].split('.')[0], linewidth=.7, markersize=3, capsize=2, mfc='w', ecolor='black')
         i+=1
 # Labels, title, and legend
 plt.xlabel('Pressure [Pa]')
@@ -147,6 +147,7 @@ plt.grid(color='gray', linestyle='--', linewidth=0.2)
 plt.legend(loc='upper right')
 #plt.title(gas_type)
 plt.xlim(0, 130)
+plt.ylim(0, 1)
 plt.show()
 #%%
 # Load JSON files
