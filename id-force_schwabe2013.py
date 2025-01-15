@@ -22,8 +22,11 @@ sigma_neon = 10**(-18)  # m^2
 sigma_argon = 2.3 * 10**(-18)  # m^2
 u = 1.660539066 * 10**(-27)  # atomic mass unit in kg
 
-m_neon = 20.1797 * u  # neon mass in kg
-m_argon = 39.948 * u  # neon mass in kg
+atomic_mass_neon = 20.1797
+atomic_mass_argon = 39.948
+
+m_neon = atomic_mass_neon * u  # neon mass in kg
+m_argon = atomic_mass_argon * u  # neon mass in kg
 
 # Argon Data Interpolated from Zobnin unpublished Data (measured by Langmur Probe in Pk-4)
 # Load the JSON file
@@ -79,47 +82,46 @@ def e_field(x, I):
     poly1d_fn = np.poly1d(coef)
     return poly1d_fn(x)
 
+
 # Model:
-model = "Khrapak0405"
-# Theory == 1 refers to the weak and intermediate coupling regime 
-# Theory == 2 refers to the strongly coupling regime between ions and dust particles 
+model = "Schwabe2013"
 # Variable Parameters
-gas_type = "Neon" #or "Neon"
-I = 1  # mA
-polarity = "neg" #pos or neg
+gas_type = "Argon" #or "Neon"
+I = 1.5  # mA
+polarity = "pos" #pos or neg
 
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
-    E_multiplier = 1.
+    E_multiplier = .95
     ne_multiplier = 1.3
-    theory = 2
+    Te_multiplier = 0.85
 elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
     E_multiplier = .75
-    ne_multiplier = 1.1
-    theory = 2
+    ne_multiplier = 1.3
+    Te_multiplier = 0.95
 elif gas_type == "Argon" and I == 1 and polarity == "pos":
     E_multiplier = .9
     ne_multiplier = .6
-    theory = 2
+    Te_multiplier = 1
 elif gas_type == "Argon" and I == 1 and polarity == "neg":
     E_multiplier = 1.
     ne_multiplier = .6
-    theory = 2
+    Te_multiplier = 1.
 elif gas_type == "Neon" and I == 1 and polarity == "neg":
-    E_multiplier = 1.15
-    ne_multiplier = 1.1
-    theory = 1
+    E_multiplier = 1.25
+    ne_multiplier = 1.15
+    Te_multiplier = 1
 elif gas_type == "Neon" and I == 1 and polarity == "pos":
     E_multiplier = .9
     ne_multiplier = 1.1
-    theory = 1
+    Te_multiplier = 1
 elif gas_type == "Neon" and I == 1.5 and polarity == "neg":
     E_multiplier = 1.2
     ne_multiplier = .8
-    theory = 1
+    Te_multiplier = 1
 else:
     E_multiplier = .9
     ne_multiplier = .7
-    theory = 1
+    Te_multiplier = 1
     
 selected_current = str(I)+"mA"
 #
@@ -138,35 +140,24 @@ a = (3.4 / 2) * 10**(-6)  # Micrometer particle radius
 if gas_type == "Argon" and I == 1.5:
     n_d = np.array([.1] * len(p)) * 10**11  #? Dust number density in m^-3; not sure about this value
 elif gas_type == "Argon" and I == 1:
-    n_d = np.array([1.7] * len(p)) * 10**11
+    n_d = np.array([1.8] * len(p)) * 10**11
 elif gas_type == "Neon" and I == 1.5:
-    if theory == 1:
-                  #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-        n_d = np.array([.01, .01, .01, .01, .01, .01, .01,.01, .01, .01, .01, .01]) * 10**11
-    else:
-                 #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-        n_d = np.array([0.75, .75, .75, .75, .75, .75, .75, .75, .75, .75, .75,.75]) * 10**11
+    n_d = np.array([.01, .01, .01, .01, .01, .01, .01,.01, .01, .01, .01, .01]) * 10**11
 else:
-    if theory == 1:
-                  #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-        n_d = np.array([0.1, .1, .1, .1, .1, .1, .1,.1, .1, .1, .1, .1]) * 10**11
-    else:
-                 #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-        n_d = np.array([0.75, .75, .75, .75, .75, .75, .75, .75, .75, .75, .75,.75]) * 10**11
-    
-    
+    n_d = np.array([.1, .1, .1, .1, .1, .1, .1,.1, .1, .1, .1, .1]) * 10**11
 # Extract the data for the selected current
 try:
     E_0_argon, T_e_argon, n_e0_argon = extract_plasma_data(data, selected_current, p)
     E_0_argon = np.multiply(E_0_argon, -100*E_multiplier)  # V/m
     n_e0_argon = n_e0_argon * ne_multiplier
+    T_e_argon = T_e_argon * Te_multiplier
 except ValueError as error_data:
     print(error_data)
 
 # Calculations Neon
 E_0_calc = [e_field(15, I), e_field(20, I), e_field(25, I), e_field(30, I), e_field(40, I), e_field(50, I), e_field(60, I), e_field(70, I), e_field(80, I), e_field(90, I), e_field(100, I), e_field(120, I)]
 E_0 = np.multiply(E_0_calc, -100*E_multiplier)  # V/m
-T_e = np.array([T_e_interpolation(15, I), T_e_interpolation(20, I), T_e_interpolation(25, I), T_e_interpolation(30, I), T_e_interpolation(40, I), T_e_interpolation(50, I), T_e_interpolation(60, I), T_e_interpolation(70, I), T_e_interpolation(80, I), T_e_interpolation(90, I), T_e_interpolation(100, I), T_e_interpolation(120, I)])
+T_e = np.multiply(np.array([T_e_interpolation(15, I), T_e_interpolation(20, I), T_e_interpolation(25, I), T_e_interpolation(30, I), T_e_interpolation(40, I), T_e_interpolation(50, I), T_e_interpolation(60, I), T_e_interpolation(70, I), T_e_interpolation(80, I), T_e_interpolation(90, I), T_e_interpolation(100, I), T_e_interpolation(120, I)]), Te_multiplier)
 n_e0 = np.multiply([n_e_interpolation(15, I), n_e_interpolation(20, I), n_e_interpolation(25, I), n_e_interpolation(30, I), n_e_interpolation(40, I), n_e_interpolation(50, I), n_e_interpolation(60, I), n_e_interpolation(70, I), n_e_interpolation(80, I), n_e_interpolation(90, I), n_e_interpolation(100, I), n_e_interpolation(120, I)], ne_multiplier * 10**14)
 
 T_n = 0.025  # eV
@@ -201,27 +192,6 @@ else:
     debye_Di = np.sqrt(epsilon_0 * k * T_i / (n_i0 * e**2))
     debye_D = np.divide(np.multiply(debye_De, debye_Di), np.sqrt(debye_De**2 + debye_Di**2))
 
-# Integration for ion drag force
-def integration_function(x, debye_Di_val, roh_0_val):
-    #return np.log(debye_Di_val/roh_0_val)
-    return 2 * np.exp(-x) * np.log((2 * debye_Di_val * x + roh_0_val) / (2 * a * x + roh_0_val))
-
-roh_0 = np.divide(Z_d , T_i) * e**2 / (4 * np.pi * epsilon_0 * k)
-
-
-'''    Scattering Parameter, Khrapak DOI: 10.1103/PhysRevE.66.046414     '''
-beta_T = roh_0/debye_Di
-beta_T2 = np.divide(Z_d * e**2, (v_ti**2)*m_argon) / (4 * np.pi * epsilon_0 * debye_D)
-
-roh_star = debye_D * np.log(beta_T)
-
-
-#
-integrated_f = np.array([
-    integrate(lambda x: integration_function(x, debye_Di[i], roh_0[i]), 0, np.inf)[0]
-    for i in range(len(p))
-])
-
 '''    Modified Frost Formular    '''
 if gas_type == "Neon":
     A = 0.0321
@@ -240,22 +210,44 @@ else:
     v_ti2 = np.sqrt(k * T_i / m_argon)
     u_i = M*v_ti2
 
+debye_u = debye_De**2/(1+2*k*T_e*(m_neon*u_i**2)+a**2)
+
+if gas_type == "Neon":
+    roh_0 = Z_d * e**2 / (2 * np.pi * epsilon_0 * m_neon * u_i)
+else:
+    roh_0 = Z_d * e**2 / (2 * np.pi * epsilon_0 * m_argon * u_i)
+
+
+'''    Scattering Parameter, Khrapak DOI: 10.1103/PhysRevE.66.046414     '''
+beta_T = roh_0/debye_Di
+beta_T2 = np.divide(Z_d * e**2, (v_ti**2)*m_argon) / (4 * np.pi * epsilon_0 * debye_D)
+
+
+if gas_type == "Neon":
+    v_boom = np.sqrt(k*T_e/m_neon)
+    nue = np.sqrt((8*k*T_n*eV_K/np.pi*m_neon) + u_i**2 * (1+ ((u_i/v_boom)/(0.6 + 0.05*np.log(atomic_mass_neon) + (debye_De/5*a)*(np.sqrt(T_i/T_e)-1)))**3))
+    debye_nue = debye_De**2/(1+2*k*T_e*(m_neon*nue**2)+a**2)
+    roh_0_nue = Z_d * e**2 / (2 * np.pi * epsilon_0 * m_neon * nue)
+else:
+    v_boom = np.sqrt(k*T_e/m_neon)
+    nue = np.sqrt((8*k*T_n*eV_K/np.pi*m_neon) + u_i**2 * (1+ ((u_i/v_boom)/(0.6 + 0.05*np.log(atomic_mass_argon) + (debye_De/5*a)*(np.sqrt(T_i/T_e)-1)))**3))
+    debye_nue = debye_De**2/(1+2*k*T_e*(m_argon*nue**2)+a**2)
+    roh_0_nue = Z_d * e**2 / (2 * np.pi * epsilon_0 * m_argon * nue)
+
+coulomb_logarithm = np.log((roh_0_nue + debye_nue)/roh_0_nue+a)
+x = debye_u/l_i
+K = x * np.arctan(x) + (np.sqrt(np.pi/2) - 1) * (x**2/(1+x**2)) - np.sqrt(np.pi/2) * np.log(1+x**2)
+
 # Electric and ion drag forces
 if gas_type == "Neon":
     F_e = Z_d * e * E_0
-    if theory == 1:
-        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3) * m_neon * (v_ti) * (u_i) * (a**2 + a*roh_0/2 +(roh_0**2) * integrated_f/4))
-    elif theory == 2:
-        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3)) * m_neon * (v_ti) * (u_i) * (roh_star**2)
-    #F_i = np.multiply(n_i0,((2*np.sqrt(2*np.pi))/3)) * m_neon * (v_ti) * (u_i) * (roh_0**2 * integrated_f)
+    sigma_scatter = np.pi * a**2 * (1+roh_0/a)
+    F_i = n_i0 * m_neon * u_i * (sigma_scatter + np.pi * roh_0**2 * (coulomb_logarithm + K))
 else:
     F_e = Z_d * e * E_0_argon
-    if theory == 1:
-        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3) * m_argon * (v_ti) * (u_i) * (a**2 + a*roh_0/2 +(roh_0**2) * integrated_f/4))
-    elif theory == 2:
-        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3)) * m_argon * (v_ti) * (u_i) * (roh_star**2)
-    #F_i = np.multiply(n_i0,((4*np.sqrt(2*np.pi))/3)) * m_argon * (v_ti) * (u_i) * (roh_0**2 * integrated_f)
-
+    sigma_scatter = np.pi * a**2 * (1+roh_0/a)
+    F_i = n_i0 * m_argon * u_i * (sigma_scatter + np.pi * roh_0**2 * (coulomb_logarithm + K))
+    
 # Particle velocity
 if gas_type == "Neon":
     factor = np.multiply(epstein, (4 / 3) * np.pi * a**2 * m_neon * v_tn * (p / (T_n * eV_K * k)))
@@ -286,7 +278,7 @@ else:
 fit = inverse_power_model(pressure_range, *popt)
 
 # Plot the results
-fig, ax = plt.subplots(dpi=600)
+fig, ax = plt.subplots(dpi=150)
 fig.set_size_inches(6, 3)
 plt.title(f"Fit Theory: {gas_type} {I} mA " + polarity, fontsize=10)
 plt.xlabel('Pressure [Pa]', fontsize=9)
@@ -304,7 +296,7 @@ plt.show()
 print(f"Fitted coefficients: c0={c0:.3f}, c1={c1:.3f}, c2={c2:.3f}, c3={c3:.3f}")
 
 # Plotting Force 
-fig, ax = plt.subplots(dpi=600)
+fig, ax = plt.subplots(dpi=150)
 fig.set_size_inches(6, 3)
 ax.plot(p, np.abs(F_e) * 10**14, linestyle='solid', marker='^', color='#00429d', linewidth=.75)
 ax.plot(p, F_i * 10**14, linestyle='solid', marker='x', color='#00cc00', linewidth=.75)
@@ -330,7 +322,7 @@ ax.legend(['$F_i/c*u_i$'])
 plt.xlabel('$u_i / v_{ti}$', fontsize=9)
 plt.ylabel('$F_i / \pi a^2 n_i m_i v_{ti}^2$', fontsize=9)
 ax.grid(color='grey', linestyle='--', linewidth=0.4, alpha=0.5)
-plt.title(gas_type + " " + str(I) + "mA " + polarity + " Khrapak 2004&2005")
+plt.title(gas_type + " " + str(I) + "mA " + polarity + " Hutchinson/Khrapak")
 plt.show()
 
 # Prepare the data to be stored in the JSON file
@@ -372,11 +364,6 @@ else:
 if '.' in selected_current:
     selected_current = selected_current.replace('.', 'p')
 # Create the filename based on gas type and selected current
-if theory == 1:
-    model = model + "_weak"
-else:
-    model = model + "_strong"
-    
 filename = f"{gas_type}_{selected_current}_{model}.json"
 filepath = f"json_files/theory/{filename}"
 
