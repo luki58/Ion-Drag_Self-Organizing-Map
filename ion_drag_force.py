@@ -13,7 +13,7 @@ from scipy.constants import k, m_e, e, epsilon_0
 from scipy.special import erf
 import optuna
 from functools import partial
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit, fsolve
 import os
 
 # Constants
@@ -32,6 +32,13 @@ file_path = "argon_interpolation/argon_params.json"
 
 with open(file_path, "r") as file:
     data = json.load(file)
+    
+# Results file path in the same directory
+result_path = os.path.join("json_files/", "mean_v_results.json")
+
+# Read existing data or initialize empty dictionary if file doesn't exist
+with open(result_path, 'r') as file:
+    results = json.load(file)
 
 # Extract data for a given current and pressure range
 def extract_plasma_data(data, current, pressure_range):
@@ -85,74 +92,90 @@ model = "Khrapak0405"
 # Theory == 2 refers to the strongly coupling regime between ions and dust particles 
 # Variable Parameters
 gas_type = "Neon" #or "Neon"
-I = 1  # mA
-polarity = "neg" #pos or neg
+I = 1.5  # mA
+polarity = "pos" #pos or neg
 
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
     E_multiplier = 1.
     ne_multiplier = 1.3
-    theory = 2
+    theory = 1
+    charge_depletion = 0
 elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
     E_multiplier = .75
     ne_multiplier = 1.1
-    theory = 2
+    theory = 1
+    charge_depletion = 0
 elif gas_type == "Argon" and I == 1 and polarity == "pos":
     E_multiplier = .9
     ne_multiplier = .6
     theory = 2
+    charge_depletion = 0
 elif gas_type == "Argon" and I == 1 and polarity == "neg":
     E_multiplier = 1.
     ne_multiplier = .6
     theory = 2
+    charge_depletion = 0
 elif gas_type == "Neon" and I == 1 and polarity == "neg":
-    E_multiplier = 1.15
-    ne_multiplier = 1.1
+    E_multiplier = 1.
+    ne_multiplier = 1.
     theory = 1
+    charge_depletion = 0
 elif gas_type == "Neon" and I == 1 and polarity == "pos":
     E_multiplier = .9
-    ne_multiplier = 1.1
+    ne_multiplier = 1.
     theory = 1
+    charge_depletion = 0
 elif gas_type == "Neon" and I == 1.5 and polarity == "neg":
-    E_multiplier = 1.2
+    E_multiplier = 1.1
     ne_multiplier = .8
     theory = 1
+    charge_depletion = 2
 else:
     E_multiplier = .9
     ne_multiplier = .7
     theory = 1
+    charge_depletion = 2
     
 selected_current = str(I)+"mA"
 #
 p = np.array([15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 120])  # Pa
 
 if gas_type == "Neon":
-    #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-    z = [0.48, 0.455, 0.425, .39, .33, .295, .27, .27, .27, .27, .27, .32]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al. # Wimmer et al. z = [0.54, 0.43, 0.42, 0.41, 0.32]
+    if theory == 2:
+        #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
+        z = [0.5, 0.45, 0.42, .37, .33, .295, .27, .27, .27, .27, .27, .32]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al. # Wimmer et al. z = [0.54, 0.43, 0.42, 0.41, 0.32]
+    else:
+        z = [0.39, 0.39, 0.39, .39, .33, .295, .27, .27, .27, .27, .27, .32]
+        if I == 1.5:
+            z = [0.30, 0.30, 0.30, .30, .30, .295, .27, .27, .27, .27, .27, .32]
     epstein = [1.44] * len(p)  # Neutral damping Epstein coefficient NEON = 1.44; ARGON = 1.26!
 else:
-    z = [.56, .53, .51, .47, .43, .41, .4, .38, .37, .36, .35, .35]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al.
+    if theory == 2:
+        z = [.53, .48, .43, .43, .43, .41, .4, .38, .37, .36, .35, .35]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al.
+    else:
+        z = [.43, .43, .43, .43, .43, .41, .4, .38, .37, .36, .35, .35]
     epstein = [1.26] * len(p)  # Neutral damping Epstein coefficient NEON = 1.44; ARGON = 1.26!
     
 a = (3.4 / 2) * 10**(-6)  # Micrometer particle radius
 
 if gas_type == "Argon" and I == 1.5:
-    n_d = np.array([.1] * len(p)) * 10**11  #? Dust number density in m^-3; not sure about this value
+    n_d = np.array([0.1] * len(p)) * 10**11  #? Dust number density in m^-3; not sure about this value
 elif gas_type == "Argon" and I == 1:
-    n_d = np.array([1.7] * len(p)) * 10**11
+    n_d = np.array([2.] * len(p)) * 10**11
 elif gas_type == "Neon" and I == 1.5:
     if theory == 1:
                   #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-        n_d = np.array([.01, .01, .01, .01, .01, .01, .01,.01, .01, .01, .01, .01]) * 10**11
+        n_d = np.array([.51, .51, .51, .51, .51, .51, .51, .51, .51, .51, .51, .51]) * 10**11        #& = Schwabe
     else:
                  #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-        n_d = np.array([0.75, .75, .75, .75, .75, .75, .75, .75, .75, .75, .75,.75]) * 10**11
+        n_d = np.array([1.67, 1.69, 1.72, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75,1.75]) * 10**11
 else:
     if theory == 1:
                   #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-        n_d = np.array([0.1, .1, .1, .1, .1, .1, .1,.1, .1, .1, .1, .1]) * 10**11
+        n_d = np.array([0.1, .01, .01, .01, .1, .1, .1,.1, .1, .1, .1, .1]) * 10**11
     else:
                  #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-        n_d = np.array([0.75, .75, .75, .75, .75, .75, .75, .75, .75, .75, .75,.75]) * 10**11
+        n_d = np.array([0.67, .69, .72, .75, .75, .75, .75, .75, .75, .75, .75,.75]) * 10**11
     
     
 # Extract the data for the selected current
@@ -190,6 +213,28 @@ else:
     v_ti = np.sqrt(8 * k * T_i / (np.pi * m_argon))
     Z_d = 4 * np.pi * epsilon_0 * k * T_e_argon * eV_K * a * z / (e**2)
     n_i0 = np.add(n_e0_argon, np.multiply(Z_d, n_d))
+    
+'''    Charge depletion adjustment    '''
+# New z from Havnes Parameter Physics Reports 421 (2005) 1 – 103#
+def oml_func_p0(x):
+    return np.sqrt(m_e/m_neon)*(1+x*tau[i]) - np.sqrt(tau[i]) * np.exp(-x)
+def oml_func(x):
+    return np.sqrt(m_e/m_neon)*(1+x*tau[i])*(1+P[i]) - np.sqrt(tau[i]) * np.exp(-x)
+'''    Havnes Parameter    '''
+P = np.multiply(np.multiply(695*(1.3/2),T_e),np.divide(n_d,n_i0))
+P2 = np.multiply(Z_d/z,np.divide(n_d,n_i0))
+#
+tau = np.divide(T_e,T_i)
+z_depl = []
+Z_d_0 = Z_d
+#
+if charge_depletion == 1:   
+    for i in range(len(p)):
+        root_p0 = fsolve(oml_func_p0, 0.4)
+        root = fsolve(oml_func, 0.4)
+        z_depl = np.append(z_depl,(((100 / root_p0) *root)/100) *z[i])
+        Z_d[i] = ((4 * np.pi * epsilon_0 * k * T_e[i] * eV_K * a * z_depl[i]) / (e**2))
+    n_i0 = np.add(n_e0, np.multiply(Z_d, n_d)) #m^-3
 
 # Debye lengths
 if gas_type == "Neon":
@@ -211,10 +256,7 @@ roh_0 = np.divide(Z_d , T_i) * e**2 / (4 * np.pi * epsilon_0 * k)
 
 '''    Scattering Parameter, Khrapak DOI: 10.1103/PhysRevE.66.046414     '''
 beta_T = roh_0/debye_Di
-beta_T2 = np.divide(Z_d * e**2, (v_ti**2)*m_argon) / (4 * np.pi * epsilon_0 * debye_D)
-
 roh_star = debye_D * np.log(beta_T)
-
 
 #
 integrated_f = np.array([
@@ -239,30 +281,67 @@ else:
     M = A * np.abs((1 + np.abs((B * EN)**C))**(-1/(2*C))) * EN
     v_ti2 = np.sqrt(k * T_i / m_argon)
     u_i = M*v_ti2
+    
+beta_T2 = np.divide(Z_d * e**2, (v_ti2**2)*m_neon) / (4 * np.pi * epsilon_0 * debye_D)
+
+fig, ax = plt.subplots(dpi=150)
+plt.plot(p, (integrated_f), color='red')
+ax.grid(color='grey', linestyle='--', linewidth=0.4, alpha=0.7)
+plt.tight_layout()
+plt.show()
+
+if I == 1.5:
+    I_var = "1p5mA"
+else:
+    I_var = "1mA"
+
+if polarity == "neg":
+    pol_var = "negative"
+else:
+    pol_var = "positive"
 
 # Electric and ion drag forces
 if gas_type == "Neon":
     F_e = Z_d * e * E_0
     if theory == 1:
-        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3) * m_neon * (v_ti) * (u_i) * (a**2 + a*roh_0/2 +(roh_0**2) * integrated_f/4))
+        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3) * m_neon * (v_ti2) * (u_i) * (a**2 + a*roh_0/2 +(roh_0**2) * integrated_f/4))
     elif theory == 2:
-        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3)) * m_neon * (v_ti) * (u_i) * (roh_star**2)
-    #F_i = np.multiply(n_i0,((2*np.sqrt(2*np.pi))/3)) * m_neon * (v_ti) * (u_i) * (roh_0**2 * integrated_f)
+        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3)) * m_neon * (v_ti2) * (u_i) * (roh_star**2)
 else:
     F_e = Z_d * e * E_0_argon
     if theory == 1:
-        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3) * m_argon * (v_ti) * (u_i) * (a**2 + a*roh_0/2 +(roh_0**2) * integrated_f/4))
+        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3) * m_argon * (v_ti2) * (u_i) * (a**2 + a*roh_0/2 +(roh_0**2) * integrated_f/4))
     elif theory == 2:
-        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3)) * m_argon * (v_ti) * (u_i) * (roh_star**2)
+        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3)) * m_argon * (v_ti2) * (u_i) * (roh_star**2)
     #F_i = np.multiply(n_i0,((4*np.sqrt(2*np.pi))/3)) * m_argon * (v_ti) * (u_i) * (roh_0**2 * integrated_f)
 
 # Particle velocity
 if gas_type == "Neon":
+    v_error = np.array(results[f"{gas_type}"][I_var]["v_mean_error_mm"][pol_var])
+    p_error = np.array(results[f"{gas_type}"][I_var]["pressure"])
     factor = np.multiply(epstein, (4 / 3) * np.pi * a**2 * m_neon * v_tn * (p / (T_n * eV_K * k)))
     v_d = (F_e + F_i) / factor
+    F_i_error = np.zeros(len(p))
+    # Calculate F_i_error using proper indexing
+    for i in range(len(p_error)-1):
+        position = np.where(p_error[i] == p)[0]  # Get the index of the matching pressure
+        if position.size > 0:  # Check if the position array is not empty
+            F_i_error[position] = v_error[i] / 1000 * factor[position]  # Update only if the position exists
+        else:
+            print("No matching pressure found for Pa in array p")
 else:
+    v_error = np.array(results[f"{gas_type}"][I_var]["v_mean_error_mm"][pol_var])
+    p_error = np.array(results[f"{gas_type}"][I_var]["pressure"])
     factor = np.multiply(epstein, (4 / 3) * np.pi * a**2 * m_argon * v_tn * (p / (T_n * eV_K * k)))
     v_d = (F_e + F_i) / factor
+    F_i_error = np.zeros(len(p))
+    # Calculate F_i_error using proper indexing
+    for i in range(len(p_error)-1):
+        position = np.where(p_error[i] == p)[0]  # Get the index of the matching pressure
+        if position.size > 0:  # Check if the position array is not empty
+            F_i_error[position] = v_error[i] / 1000 * factor[position]  # Update only if the position exists
+        else:
+            print("No matching pressure found for Pa in array p")
 
 #%%
 # Define the fitting model: v = c1 * p**(-1) + c2 * p**(-2) + c3 * p**(-3)
@@ -317,12 +396,14 @@ plt.show()
 fig, ax = plt.subplots(dpi=300)
 fig.set_size_inches(6, 3)
 if gas_type == "Neon":
+    t_var = np.pi*a**2*n_i0*m_neon*v_ti**2
     x = (u_i/v_ti)
-    y = (F_i/(np.pi*a**2*n_i0*m_neon*v_ti**2))
+    y = (F_i/(t_var))
     ax.plot(x, y, linestyle='solid', marker='x', color='#00cc00', linewidth=.75)
 else:
+    t_var = np.pi*a**2*n_i0*m_argon*v_ti**2
     x = (u_i/v_ti) 
-    y = (F_i/(np.pi*a**2*n_i0*m_argon*v_ti**2))
+    y = (F_i/(t_var))
     ax.plot(x, y, linestyle='solid', marker='x', color='#00cc00', linewidth=.75)
 ax.set_yscale('log')
 ax.set_xscale('log')
@@ -338,6 +419,8 @@ if gas_type == "Neon":
     data_to_store = {
         polarity: {
         "F_i": F_i.tolist(),
+        "F_i_error": F_i_error.tolist(),
+        "factor": factor.tolist(),
         "F_e": F_e.tolist(),
         "v_d_theory": (v_d * -1000).tolist(),
         "v_d_fit": fit.tolist(),
@@ -348,13 +431,16 @@ if gas_type == "Neon":
         "z": z,
         "beta_T": beta_T.tolist(),
         "textbook_graph_F_x": x.tolist(),
-        "textbook_graph_F_y": y.tolist()
+        "textbook_graph_F_y": y.tolist(),
+        "textbook_var": t_var.tolist()
         }
     }
 else:
     data_to_store = {
         polarity: {
         "F_i": F_i.tolist(),
+        "F_i_error": F_i_error.tolist(),
+        "factor": factor.tolist(),
         "F_e": F_e.tolist(),
         "v_d_theory": (v_d * -1000).tolist(),
         "v_d_fit": fit.tolist(),
@@ -365,7 +451,8 @@ else:
         "z": z,
         "beta_T": beta_T.tolist(),
         "textbook_graph_F_x": x.tolist(),
-        "textbook_graph_F_y": y.tolist()
+        "textbook_graph_F_y": y.tolist(),
+        "textbook_var": t_var.tolist()
         }
     }
 
