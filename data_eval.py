@@ -13,7 +13,10 @@ from scipy.optimize import curve_fit
 
 #%% v mean plots
 
-json_folder = "json_files/Neon/1p5mA"
+gastype = "Neon" #Argon
+current = "1p5mA"  #1p5mA
+
+json_folder = f"json_files/{gastype}/{current}"
         
 # json_folder = "json_files/Argon/"
 file_list = [os.path.join(json_folder, img) for img in os.listdir(json_folder) if img.endswith(".json")]
@@ -34,26 +37,60 @@ with open(json_folder.split('/')[0] + "/theory/" + json_folder.split('/')[1] + "
 with open(json_folder.split('/')[0] + "/theory/" + json_folder.split('/')[1] + "_" + json_folder.split('/')[2] + "_Schwabe2013.json", "r") as file:
     theory_schwabe2013 = json.load(file)
 
-if json_folder.split('/')[1] == 'Argon' or json_folder.split('/')[1] == 'Neon':
-    v_mean_pos = np.array(())
-    pressure_pos = np.array(())
-    v_error_pos = np.array(())
-    #
-    v_mean_neg = np.array(())
-    pressure_neg = np.array(())
-    v_error_neg = np.array(())
-    
-    for data in dataset:
-        vel = data['velocity']
-        polarity = data['polarity']
-        if polarity == 'pos':
-            v_mean_pos = np.append(v_mean_pos, np.mean(vel)*1000)
-            v_error_pos = np.append(v_error_pos, np.std(np.array(vel))*1000)
-            pressure_pos = np.append(pressure_pos, data['pressure'])
-        else:
-            v_mean_neg = np.append(v_mean_neg, np.mean(vel)*1000)
-            v_error_neg = np.append(v_error_neg, np.std(np.array(vel))*1000)
-            pressure_neg = np.append(pressure_neg, data['pressure'])
+v_mean_pos = np.array(())
+pressure_pos = np.array(())
+v_error_pos = np.array(())
+v_mean_neg = np.array(())
+pressure_neg = np.array(())
+v_error_neg = np.array(())
+
+for data in dataset:
+    vel = data['velocity']
+    polarity = data['polarity']
+    if polarity == 'pos':
+        v_mean_pos = np.append(v_mean_pos, np.mean(vel)*1000)
+        v_error_pos = np.append(v_error_pos, np.std(np.array(vel))*1000)
+        pressure_pos = np.append(pressure_pos, data['pressure'])
+    else:
+        v_mean_neg = np.append(v_mean_neg, np.mean(vel)*1000)
+        v_error_neg = np.append(v_error_neg, np.std(np.array(vel))*1000)
+        pressure_neg = np.append(pressure_neg, data['pressure'])
+
+# Results file path in the same directory
+result_path = os.path.join("json_files/", "mean_v_results.json")
+
+# Read existing data or initialize empty dictionary if file doesn't exist
+try:
+    with open(result_path, 'r') as file:
+        results = json.load(file)
+except FileNotFoundError:
+    results = {}
+
+# Define the keys for gas type and current if they don't exist
+if gastype not in results:
+    results[gastype] = {}
+
+if current not in results[gastype]:
+    results[gastype][current] = {}
+
+# Check if results already exist in the file
+if 'v_mean_mm' not in results[gastype][current] or 'v_mean_error_mm' not in results[gastype][current]:
+    # Update the specific gas type and current setting with new data
+    results[gastype][current].update({
+        'v_mean_mm': {
+            'positive': v_mean_pos.tolist(),
+            'negative': v_mean_neg.tolist(),
+        },
+        'v_mean_error_mm': {
+            'positive': v_error_pos.tolist(),
+            'negative': v_error_neg.tolist()
+        },
+        'pressure': pressure_pos.tolist()
+    })
+
+    # Write the updated results back to the file
+    with open(result_path, 'w') as file:
+        json.dump(results, file, indent=4)
 
 # Define the fitting model: v = c1 * p**(-1) + c2 * p**(-2) + c3 * p**(-3)
 def inverse_power_model(p, c0, c1, c2, c3):
@@ -130,8 +167,8 @@ for file in os.listdir(path)[2:]:
             fmt_list ='d'
         else:
             fmt_list ='s' 
-        plt.errorbar(p, np.array(json_data["pos"]["F_i"])*(10**(13)), yerr=np.array(json_data["pos"]["F_i"])*(0.05*10**(13)), fmt=fmt_list, color='red', label='$F_i^+$ ' + file.split('_')[1].split('.')[0], linewidth=.7, markersize=2.5, capsize=2, ecolor='black')
-        plt.errorbar(p, np.array(json_data["neg"]["F_i"])*(10**(13)), yerr=np.array(json_data["neg"]["F_i"])*(0.05*10**(13)), fmt=fmt_list, color='blue', label='$F_i^-$ ' + file.split('_')[1].split('.')[0], linewidth=.7, markersize=2, capsize=2, ecolor='black')
+        plt.errorbar(p, np.array(json_data["pos"]["F_i"])*(10**(13)), yerr=np.array(json_data["pos"]["F_i_error"])*(10**(13)), fmt=fmt_list, color='red', label='$F_i^+$ ' + file.split('_')[1].split('.')[0], linewidth=.7, markersize=2.5, capsize=2, ecolor='black')
+        plt.errorbar(p, np.array(json_data["neg"]["F_i"])*(10**(13)), yerr=np.array(json_data["neg"]["F_i_error"])*(10**(13)), fmt=fmt_list, color='blue', label='$F_i^-$ ' + file.split('_')[1].split('.')[0], linewidth=.7, markersize=2, capsize=2, ecolor='black')
 # Labels, title, and legend
 plt.xlabel('Pressure [Pa]')
 plt.ylabel('$F_i \cdot 10^{-13}$ [N]')
@@ -296,20 +333,27 @@ json_data_textbook_fi = json.load(textbook_fi)
 # Plotting scattering parameter \beta_T
 fig, ax = plt.subplots(dpi=400)
 
+split = False
+
 file_paths = [
     os.path.join(json_folder.split('/')[0] + "/theory/", f)
     for f in os.listdir(json_folder.split('/')[0] + "/theory/")
-    if f != '.DS_Store' and f != '._.DS_Store'
+    if f != '.DS_Store' and f != '._.DS_Store' #and f.split('_')[2] == 'Schwabe2013.json' #and f.split('_')[3] != 'strong.json'
 ]
 
-color_list = ["r", "g", "b", "r", "g", "b", "r", "g", "b", "r", "g", "b"]
-marker_list = ["s", "s", "s", "d", "d", "d", "^", "^", "^", "o", "o", "o"]
+if split == False:
+    color_list = ["r", "g", "b", "r", "g", "b", "r", "g", "b", "r", "g", "b"]
+    marker_list = ["s", "s", "s", "d", "d", "d", "^", "^", "^", "o", "o", "o"]
+else:
+    color_list = ["b", "b", "b", "b"]# "g", "b", "r"]
+    marker_list = ["s", "d", "^", "o"]
 
 i = 0
 for file in file_paths:
     json_file = open(file, 'r')
     json_data = json.load(json_file)
-    ax.plot(json_data["neg"]["textbook_graph_F_x"], json_data["neg"]["textbook_graph_F_y"], color=color_list[i], marker=marker_list[i], label=file.split('_')[3].split('.')[0], linewidth=.7, mfc='w')
+    y_error = np.array(json_data["neg"]["F_i_error"])/np.array(json_data["neg"]["textbook_var"])
+    ax.errorbar(json_data["neg"]["textbook_graph_F_x"], json_data["neg"]["textbook_graph_F_y"], yerr=y_error, color=color_list[i], fmt=marker_list[i], label=file.split('_')[3].split('.')[0], linewidth=.7, mfc='w')
     i+=1
 ax.plot(json_data_textbook_fi["x"], json_data_textbook_fi["y"], color="black", label="Hutchinson", linewidth=1, linestyle="--")
 #ax.plot(theory_data_weak["pos"]["textbook_graph_F_x"], theory_data_weak["pos"]["textbook_graph_F_y"], color=color_list[1], marker="x", label="Khrapak F_{weak}", linewidth=.7)
@@ -321,7 +365,7 @@ ax.set_xscale('log')
 
 # Labeling axes
 plt.xlabel('$u_i / v_{th,i}$', fontsize=10)
-plt.ylabel('$F_i / \pi a^2 n_i m_i v_{th,i}^2$', fontsize=10)
+plt.ylabel('$F_i^{Schwabe} / \pi a^2 n_i m_i v_{th,i}^2$', fontsize=10)
 
 # Setting axis limits
 ax.set_xlim(0.04, 8)
