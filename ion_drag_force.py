@@ -91,39 +91,39 @@ model = "Khrapak0405"
 # Theory == 1 refers to the weak and intermediate coupling regime 
 # Theory == 2 refers to the strongly coupling regime between ions and dust particles 
 # Variable Parameters
-gas_type = "Neon" #or "Neon"
-I = 1.5  # mA
-polarity = "neg" #pos or neg
+gas_type = "Argon" #or "Neon"
+I = 1  # mA
+polarity = "pos" #pos or neg
 
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
     E_multiplier = 1.
     ne_multiplier = 1.3
-    theory = 2
+    theory = 1
     charge_depletion = 0
 elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
     E_multiplier = .75
     ne_multiplier = 1.1
-    theory = 2
+    theory = 1
     charge_depletion = 1
 elif gas_type == "Argon" and I == 1 and polarity == "pos":
     E_multiplier = .9
     ne_multiplier = .6
-    theory = 2
+    theory = 1
     charge_depletion = 0
 elif gas_type == "Argon" and I == 1 and polarity == "neg":
     E_multiplier = 1.
     ne_multiplier = .6
-    theory = 2
+    theory = 1
     charge_depletion = 0
 elif gas_type == "Neon" and I == 1 and polarity == "neg":
     E_multiplier = 1.
     ne_multiplier = 1.
-    theory = 1
+    theory = 2
     charge_depletion = 0
 elif gas_type == "Neon" and I == 1 and polarity == "pos":
     E_multiplier = .9
     ne_multiplier = 1.
-    theory = 1
+    theory = 2
     charge_depletion = 0
 elif gas_type == "Neon" and I == 1.5 and polarity == "neg":
     E_multiplier = 1.1
@@ -143,17 +143,17 @@ p = np.array([15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 120])  # Pa
 if gas_type == "Neon":
     if theory == 2:
         #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-        z = [0.5, 0.45, 0.42, .37, .33, .295, .27, .27, .27, .27, .27, .32]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al. # Wimmer et al. z = [0.54, 0.43, 0.42, 0.41, 0.32]
+        z = [0.37, 0.36, 0.35, .34, .33, .295, .27, .27, .27, .27, .27, .32]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al. # Wimmer et al. z = [0.54, 0.43, 0.42, 0.41, 0.32]
     else:
-        z = [0.39, 0.39, 0.39, .39, .33, .295, .27, .27, .27, .27, .27, .32]
+        z = [0.37, 0.36, 0.35, .34, .33, .295, .27, .27, .27, .27, .27, .32]
         if I == 1.5:
             z = [0.30, 0.30, 0.30, .30, .30, .295, .27, .27, .27, .27, .27, .32]
     epstein = [1.44] * len(p)  # Neutral damping Epstein coefficient NEON = 1.44; ARGON = 1.26!
 else:
     if theory == 2:
-        z = [.53, .48, .43, .43, .43, .41, .4, .38, .37, .36, .35, .35]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al.
+        z = [.56, .48, .45, .43, .42, .41, .4, .38, .37, .36, .35, .35]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al.
     else:
-        z = [.43, .43, .43, .43, .43, .41, .4, .38, .37, .36, .35, .35]
+        z = [.56, .48, .45, .43, .42, .41, .4, .38, .37, .36, .35, .35]
     epstein = [1.26] * len(p)  # Neutral damping Epstein coefficient NEON = 1.44; ARGON = 1.26!
     
 a = (3.4 / 2) * 10**(-6)  # Micrometer particle radius
@@ -163,19 +163,9 @@ if gas_type == "Argon" and I == 1.5:
 elif gas_type == "Argon" and I == 1:
     n_d = np.array([2.] * len(p)) * 10**11
 elif gas_type == "Neon" and I == 1.5:
-    if theory == 1:
-                  #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-        n_d = np.array([.51, .51, .51, .51, .51, .51, .51, .51, .51, .51, .51, .51]) * 10**11        #& = Schwabe
-    else:
-                 #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-        n_d = np.array([1.67, 1.69, 1.72, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75,1.75]) * 10**11
+    n_d = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.1, 0.1, 1.01, 1.01, 1.01, 1.01]) * 10**11
 else:
-    if theory == 1:
-                  #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-        n_d = np.array([0.1, .01, .01, .01, .1, .1, .1,.1, .1, .1, .1, .1]) * 10**11
-    else:
-                 #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-        n_d = np.array([0.67, .69, .72, .75, .75, .75, .75, .75, .75, .75, .75,.75]) * 10**11
+    n_d = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.1, 0.1, 1.01, 1.01, 1.01, 1.01]) * 10**11
     
     
 # Extract the data for the selected current
@@ -301,7 +291,7 @@ else:
     v_ti2 = np.sqrt(k * T_i / m_argon)
     u_i = M*v_ti2
     
-beta_T2 = np.divide(Z_d * e**2, (v_ti2**2)*m_neon) / (4 * np.pi * epsilon_0 * debye_D)
+beta_T2 = np.divide(Z_d * e**2, (v_ti**2)*m_neon) / (4 * np.pi * epsilon_0 * debye_D)
 
 fig, ax = plt.subplots(dpi=150)
 plt.plot(p, (integrated_f), color='red')
@@ -323,15 +313,15 @@ else:
 if gas_type == "Neon":
     F_e = Z_d * e * E_0
     if theory == 1:
-        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3) * m_neon * (v_ti2) * (u_i) * (a**2 + a*roh_0/2 +(roh_0**2) * integrated_f/4))
+        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3) * m_neon * (v_ti) * (u_i) * (a**2 + a*roh_0/2 +(roh_0**2) * integrated_f/4))
     elif theory == 2:
-        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3)) * m_neon * (v_ti2) * (u_i) * (roh_star**2)
+        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3)) * m_neon * (v_ti) * (u_i) * (roh_star**2)
 else:
     F_e = Z_d * e * E_0_argon
     if theory == 1:
-        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3) * m_argon * (v_ti2) * (u_i) * (a**2 + a*roh_0/2 +(roh_0**2) * integrated_f/4))
+        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3) * m_argon * (v_ti) * (u_i) * (a**2 + a*roh_0/2 +(roh_0**2) * integrated_f/4))
     elif theory == 2:
-        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3)) * m_argon * (v_ti2) * (u_i) * (roh_star**2)
+        F_i = np.multiply(n_i0,((8*np.sqrt(2*np.pi))/3)) * m_argon * (v_ti) * (u_i) * (roh_star**2)
     #F_i = np.multiply(n_i0,((4*np.sqrt(2*np.pi))/3)) * m_argon * (v_ti) * (u_i) * (roh_0**2 * integrated_f)
 
 # Particle velocity

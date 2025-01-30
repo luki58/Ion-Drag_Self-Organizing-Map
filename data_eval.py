@@ -13,8 +13,8 @@ from scipy.optimize import curve_fit
 
 #%% v mean plots
 
-gastype = "Neon" #Argon
-current = "1p5mA"  #1p5mA
+gastype = "Argon" #Argon
+current = "1mA"  #1p5mA
 
 json_folder = f"json_files/{gastype}/{current}"
         
@@ -352,8 +352,8 @@ i = 0
 for file in file_paths:
     json_file = open(file, 'r')
     json_data = json.load(json_file)
-    y_error = np.array(json_data["neg"]["F_i_error"])/np.array(json_data["neg"]["textbook_var"])
-    ax.errorbar(json_data["neg"]["textbook_graph_F_x"], json_data["neg"]["textbook_graph_F_y"], yerr=y_error, color=color_list[i], fmt=marker_list[i], label=file.split('_')[3].split('.')[0], linewidth=.7, mfc='w')
+    y_error = np.array(json_data["pos"]["F_i_error"])/np.array(json_data["pos"]["textbook_var"])
+    ax.errorbar(json_data["pos"]["textbook_graph_F_x"], json_data["pos"]["textbook_graph_F_y"], yerr=y_error, color=color_list[i], fmt=marker_list[i], label=file.split('_')[3].split('.')[0], linewidth=.7, mfc='w')
     i+=1
 ax.plot(json_data_textbook_fi["x"], json_data_textbook_fi["y"], color="black", label="Hutchinson", linewidth=1, linestyle="--")
 #ax.plot(theory_data_weak["pos"]["textbook_graph_F_x"], theory_data_weak["pos"]["textbook_graph_F_y"], color=color_list[1], marker="x", label="Khrapak F_{weak}", linewidth=.7)
