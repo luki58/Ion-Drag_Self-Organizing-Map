@@ -92,7 +92,7 @@ model = "Schwabe2013"
 # Variable Parameters
 gas_type = "Neon" #or "Neon"
 I = 1.5  # mA
-polarity = "pos" #pos or neg
+polarity = "neg" #pos or neg
 charge_depletion = 1
 
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
@@ -134,20 +134,20 @@ p = np.array([15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 120])  # Pa
 
 if gas_type == "Neon":
     #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-    z = [0.35, 0.35, 0.35, .35, .33, .295, .27, .27, .27, .27, .27, .32]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al. # Wimmer et al. z = [0.54, 0.43, 0.42, 0.41, 0.32]
+    z = [0.37, 0.36, 0.35, .34, .33, .295, .27, .27, .27, .27, .27, .32]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al. # Wimmer et al. z = [0.54, 0.43, 0.42, 0.41, 0.32]
     epstein = [1.44] * len(p)  # Neutral damping Epstein coefficient NEON = 1.44; ARGON = 1.26!
 else:
-    z = [.53, .48, .43, .43, .43, .41, .4, .38, .37, .36, .35, .35]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al.
+    z = [.56, .48, .45, .43, .42, .41, .4, .38, .37, .36, .35, .35]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al.
     epstein = [1.26] * len(p)  # Neutral damping Epstein coefficient NEON = 1.44; ARGON = 1.26!
     
 a = (3.4 / 2) * 10**(-6)  # Micrometer particle radius
 
 if gas_type == "Argon" and I == 1.5:
-    n_d = np.array([1.5] * len(p)) * 10**11  #? Dust number density in m^-3; not sure about this value
+    n_d = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.1, 0.1, 1.01, 1.01, 1.01, 1.01]) * 10**11
 elif gas_type == "Argon" and I == 1:
-    n_d = np.array([2.] * len(p)) * 10**11
-elif gas_type == "Neon" and I == 1.5:
-    n_d = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 1.01, 1.01, 1.01, 1.01]) * 10**11
+    n_d = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.1, 0.1, 1.01, 1.01, 1.01, 1.01]) * 10**11
+elif gas_type == "Neon":
+    n_d = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.1, 0.1, 1.01, 1.01, 1.01, 1.01]) * 10**11
 # Extract the data for the selected current
 try:
     E_0_argon, T_e_argon, n_e0_argon = extract_plasma_data(data, selected_current, p)
