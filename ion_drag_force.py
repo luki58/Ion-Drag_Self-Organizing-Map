@@ -91,30 +91,30 @@ model = "Khrapak0405"
 # Theory == 1 refers to the weak and intermediate coupling regime 
 # Theory == 2 refers to the strongly coupling regime between ions and dust particles 
 # Variable Parameters
-gas_type = "Argon" #or "Neon"
-I = 1  # mA
+gas_type = "Neon" #or "Neon"
+I = 1.5  # mA
 polarity = "pos" #pos or neg
 
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
     E_multiplier = 1.
     ne_multiplier = 1.3
     theory = 1
-    charge_depletion = 0
+    charge_depletion = 1
 elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
-    E_multiplier = .75
-    ne_multiplier = 1.1
+    E_multiplier = .9
+    ne_multiplier = 1.2
     theory = 1
     charge_depletion = 1
 elif gas_type == "Argon" and I == 1 and polarity == "pos":
     E_multiplier = .9
-    ne_multiplier = .6
+    ne_multiplier = 1.
     theory = 1
-    charge_depletion = 0
+    charge_depletion = 1
 elif gas_type == "Argon" and I == 1 and polarity == "neg":
     E_multiplier = 1.
     ne_multiplier = .6
     theory = 1
-    charge_depletion = 0
+    charge_depletion = 1
 elif gas_type == "Neon" and I == 1 and polarity == "neg":
     E_multiplier = 1.
     ne_multiplier = 1.
@@ -122,9 +122,9 @@ elif gas_type == "Neon" and I == 1 and polarity == "neg":
     charge_depletion = 0
 elif gas_type == "Neon" and I == 1 and polarity == "pos":
     E_multiplier = .9
-    ne_multiplier = 1.
-    theory = 2
-    charge_depletion = 0
+    ne_multiplier = .9
+    theory = 1
+    charge_depletion = 1
 elif gas_type == "Neon" and I == 1.5 and polarity == "neg":
     E_multiplier = 1.1
     ne_multiplier = .8
@@ -146,8 +146,6 @@ if gas_type == "Neon":
         z = [0.37, 0.36, 0.35, .34, .33, .295, .27, .27, .27, .27, .27, .32]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al. # Wimmer et al. z = [0.54, 0.43, 0.42, 0.41, 0.32]
     else:
         z = [0.37, 0.36, 0.35, .34, .33, .295, .27, .27, .27, .27, .27, .32]
-        if I == 1.5:
-            z = [0.30, 0.30, 0.30, .30, .30, .295, .27, .27, .27, .27, .27, .32]
     epstein = [1.44] * len(p)  # Neutral damping Epstein coefficient NEON = 1.44; ARGON = 1.26!
 else:
     if theory == 2:
@@ -159,9 +157,9 @@ else:
 a = (3.4 / 2) * 10**(-6)  # Micrometer particle radius
 
 if gas_type == "Argon" and I == 1.5:
-    n_d = np.array([0.1] * len(p)) * 10**11  #? Dust number density in m^-3; not sure about this value
+    n_d = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.1, 0.1, 1.01, 1.01, 1.01, 1.01]) * 10**11  #? Dust number density in m^-3; not sure about this value
 elif gas_type == "Argon" and I == 1:
-    n_d = np.array([2.] * len(p)) * 10**11
+    n_d = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.1, 0.1, 1.01, 1.01, 1.01, 1.01]) * 10**11 
 elif gas_type == "Neon" and I == 1.5:
     n_d = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.1, 0.1, 1.01, 1.01, 1.01, 1.01]) * 10**11
 else:

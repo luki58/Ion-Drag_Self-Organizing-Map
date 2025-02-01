@@ -90,22 +90,22 @@ def e_field(x, I):
 # Model:
 model = "Schwabe2013"
 # Variable Parameters
-gas_type = "Neon" #or "Neon"
+gas_type = "Argon" #or "Neon"
 I = 1.5  # mA
-polarity = "neg" #pos or neg
+polarity = "pos" #pos or neg
 charge_depletion = 1
 
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
     E_multiplier = .95
     ne_multiplier = 1.3
-    Te_multiplier = 0.85
+    Te_multiplier = 1.
 elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
-    E_multiplier = .75
-    ne_multiplier = 1.3
-    Te_multiplier = 0.95
+    E_multiplier = .9
+    ne_multiplier = .8
+    Te_multiplier = 1.
 elif gas_type == "Argon" and I == 1 and polarity == "pos":
     E_multiplier = .9
-    ne_multiplier = .6
+    ne_multiplier = 1.
     Te_multiplier = 1
 elif gas_type == "Argon" and I == 1 and polarity == "neg":
     E_multiplier = 1.
@@ -117,7 +117,7 @@ elif gas_type == "Neon" and I == 1 and polarity == "neg":
     Te_multiplier = 1
 elif gas_type == "Neon" and I == 1 and polarity == "pos":
     E_multiplier = .9
-    ne_multiplier = 1.1
+    ne_multiplier = .9
     Te_multiplier = 1
 elif gas_type == "Neon" and I == 1.5 and polarity == "neg":
     E_multiplier = 1.1
@@ -256,11 +256,6 @@ else:
     debye_u = np.sqrt(debye_De**2/(1+(2*T_e_argon*eV_K/(m_argon*u_i**2)))) + a**2 
 
 
-'''    Scattering Parameter, Khrapak DOI: 10.1103/PhysRevE.66.046414     '''
-beta_T = roh_0/debye_Di
-beta_T2 = np.divide(Z_d * e**2, (v_ti2**2)*m_argon) / (4 * np.pi * epsilon_0 * debye_D)
-
-
 if gas_type == "Neon":
     v_boom = np.sqrt(k*T_e*eV_K/m_neon)
     nue = np.sqrt((8*T_n*k*eV_K/(np.pi*m_neon)) + u_i**2 * (1+ ((u_i/v_boom)/(0.6 + 0.05*np.log(atomic_mass_neon) + (debye_De/(5*a))*(np.sqrt(T_i/T_e)-.1)))**3))
@@ -271,6 +266,11 @@ else:
     nue = np.sqrt((8*T_n*k*eV_K/(np.pi*m_argon)) + u_i**2 * (1+ ((u_i/v_boom)/(0.6 + 0.05*np.log(atomic_mass_argon) + (debye_De/(5*a))*(np.sqrt(T_i/T_e_argon)-.1)))**3))
     debye_nue = np.sqrt(debye_De**2/(1+(2*k*T_e_argon*eV_K/(m_argon*nue**2)))) + a**2 #?
     roh_0_nue = Z_d * e**2 / (2 * np.pi * epsilon_0 * m_argon * nue**2)
+
+'''    Scattering Parameter, Khrapak DOI: 10.1103/PhysRevE.66.046414     '''
+beta_T = roh_0/debye_Di
+#beta_T = roh_0_nue/debye_nue
+#beta_T2 = np.divide(Z_d * e**2, (v_ti**2)*m_argon) / (4 * np.pi * epsilon_0 * debye_D)
 
 coulomb_logarithm = np.log((roh_0_nue + debye_nue)/(roh_0_nue + a))
 x = debye_u/l_i
