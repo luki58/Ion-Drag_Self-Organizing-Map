@@ -92,7 +92,7 @@ model = "Khrapak0405"
 # Theory == 2 refers to the strongly coupling regime between ions and dust particles 
 # Variable Parameters
 gas_type = "Neon" #or "Neon"
-I = 1.5  # mA
+I = 1  # mA
 polarity = "pos" #pos or neg
 
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
@@ -288,8 +288,14 @@ else:
     M = A * np.abs((1 + np.abs((B * EN)**C))**(-1/(2*C))) * EN
     v_ti2 = np.sqrt(k * T_i / m_argon)
     u_i = M*v_ti2
-    
-beta_T2 = np.divide(Z_d * e**2, (v_ti**2)*m_neon) / (4 * np.pi * epsilon_0 * debye_D)
+
+
+#beta_T2 = np.divide(Z_d * e**2, (v_ti**2)*m_neon) / (4 * np.pi * epsilon_0 * debye_D)
+if gas_type == "Neon":
+    beta_T2 = Z_d * e**2 / (2 * np.pi * epsilon_0 * m_neon * v_ti**2 * debye_D)
+else:
+    beta_T2 = Z_d * e**2 / (2 * np.pi * epsilon_0 * m_argon * v_ti**2 * debye_D)
+
 
 fig, ax = plt.subplots(dpi=150)
 plt.plot(p, (integrated_f), color='red')
@@ -436,7 +442,7 @@ if gas_type == "Neon":
         "T_e": T_e.tolist(),
         "n_e0": n_e0.tolist(),
         "z": z,
-        "beta_T": beta_T.tolist(),
+        "beta_T": beta_T2.tolist(),
         "textbook_graph_F_x": x.tolist(),
         "textbook_graph_F_y": y.tolist(),
         "textbook_var": t_var.tolist()
@@ -456,7 +462,7 @@ else:
         "T_e": T_e_argon.tolist(),
         "n_e0": n_e0_argon.tolist(),
         "z": z,
-        "beta_T": beta_T.tolist(),
+        "beta_T": beta_T2.tolist(),
         "textbook_graph_F_x": x.tolist(),
         "textbook_graph_F_y": y.tolist(),
         "textbook_var": t_var.tolist()

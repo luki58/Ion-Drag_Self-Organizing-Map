@@ -90,7 +90,7 @@ def e_field(x, I):
 # Model:
 model = "Schwabe2013"
 # Variable Parameters
-gas_type = "Argon" #or "Neon"
+gas_type = "Neon" #or "Neon"
 I = 1.5  # mA
 polarity = "pos" #pos or neg
 charge_depletion = 1
@@ -268,8 +268,8 @@ else:
     roh_0_nue = Z_d * e**2 / (2 * np.pi * epsilon_0 * m_argon * nue**2)
 
 '''    Scattering Parameter, Khrapak DOI: 10.1103/PhysRevE.66.046414     '''
-beta_T = roh_0/debye_Di
-#beta_T = roh_0_nue/debye_nue
+#beta_T = roh_0/debye_Di
+beta_T = roh_0_nue/debye_nue
 #beta_T2 = np.divide(Z_d * e**2, (v_ti**2)*m_argon) / (4 * np.pi * epsilon_0 * debye_D)
 
 coulomb_logarithm = np.log((roh_0_nue + debye_nue)/(roh_0_nue + a))
