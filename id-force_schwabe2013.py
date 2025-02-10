@@ -143,11 +143,12 @@ else:
 a = (3.4 / 2) * 10**(-6)  # Micrometer particle radius
 
 if gas_type == "Argon" and I == 1.5:
-    n_d = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.1, 0.1, 1.01, 1.01, 1.01, 1.01]) * 10**11
+    n_d = np.array([0.06, 0.07, 0.09, 0.1, 0.3, 0.5, 0.7, 0.9, 1.01, 1.01, 1.01, 1.01]) * 10**11
 elif gas_type == "Argon" and I == 1:
-    n_d = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.1, 0.1, 1.01, 1.01, 1.01, 1.01]) * 10**11
+    n_d = np.array([0.06, 0.07, 0.09, 0.1, 0.3, 0.5, 0.7, 0.9, 1.01, 1.01, 1.01, 1.01]) * 10**11
 elif gas_type == "Neon":
-    n_d = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.1, 0.1, 1.01, 1.01, 1.01, 1.01]) * 10**11
+                #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
+    n_d = np.array([0.06, 0.07, 0.09, 0.1, 0.3, 0.5, 0.7, 0.9, 1.01, 1.01, 1.01, 1.01]) * 10**11
 # Extract the data for the selected current
 try:
     E_0_argon, T_e_argon, n_e0_argon = extract_plasma_data(data, selected_current, p)
@@ -270,6 +271,7 @@ else:
 '''    Scattering Parameter, Khrapak DOI: 10.1103/PhysRevE.66.046414     '''
 #beta_T = roh_0/debye_Di
 beta_T = roh_0_nue/debye_nue
+beta_T2 = roh_0/debye_D
 #beta_T2 = np.divide(Z_d * e**2, (v_ti**2)*m_argon) / (4 * np.pi * epsilon_0 * debye_D)
 
 coulomb_logarithm = np.log((roh_0_nue + debye_nue)/(roh_0_nue + a))
@@ -424,7 +426,7 @@ if gas_type == "Neon":
         "E_0": E_0.tolist(),
         "T_e": T_e.tolist(),
         "n_e0": n_e0.tolist(),
-        "z": z,
+        "z": z_depl.tolist(),
         "beta_T": beta_T.tolist(),
         "textbook_graph_F_x": x.tolist(),
         "textbook_graph_F_y": y.tolist(),
@@ -444,7 +446,7 @@ else:
         "E_0": E_0_argon.tolist(),
         "T_e": T_e_argon.tolist(),
         "n_e0": n_e0_argon.tolist(),
-        "z": z,
+        "z": z_depl.tolist(),
         "beta_T": beta_T.tolist(),
         "textbook_graph_F_x": x.tolist(),
         "textbook_graph_F_y": y.tolist(),

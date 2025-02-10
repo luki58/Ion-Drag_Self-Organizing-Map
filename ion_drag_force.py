@@ -91,14 +91,14 @@ model = "Khrapak0405"
 # Theory == 1 refers to the weak and intermediate coupling regime 
 # Theory == 2 refers to the strongly coupling regime between ions and dust particles 
 # Variable Parameters
-gas_type = "Neon" #or "Neon"
-I = 1  # mA
+gas_type = "Argon" #or "Neon"
+I = 1.5  # mA
 polarity = "pos" #pos or neg
 
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
     E_multiplier = 1.
     ne_multiplier = 1.3
-    theory = 1
+    theory = 2
     charge_depletion = 1
 elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
     E_multiplier = .9
@@ -108,17 +108,17 @@ elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
 elif gas_type == "Argon" and I == 1 and polarity == "pos":
     E_multiplier = .9
     ne_multiplier = 1.
-    theory = 1
+    theory = 2
     charge_depletion = 1
 elif gas_type == "Argon" and I == 1 and polarity == "neg":
     E_multiplier = 1.
     ne_multiplier = .6
-    theory = 1
+    theory = 2
     charge_depletion = 1
 elif gas_type == "Neon" and I == 1 and polarity == "neg":
     E_multiplier = 1.
     ne_multiplier = 1.
-    theory = 2
+    theory = 1
     charge_depletion = 0
 elif gas_type == "Neon" and I == 1 and polarity == "pos":
     E_multiplier = .9
@@ -133,7 +133,7 @@ elif gas_type == "Neon" and I == 1.5 and polarity == "neg":
 else:
     E_multiplier = .9
     ne_multiplier = .7
-    theory = 1
+    theory = 2
     charge_depletion = 1
     
 selected_current = str(I)+"mA"
@@ -157,13 +157,13 @@ else:
 a = (3.4 / 2) * 10**(-6)  # Micrometer particle radius
 
 if gas_type == "Argon" and I == 1.5:
-    n_d = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.1, 0.1, 1.01, 1.01, 1.01, 1.01]) * 10**11  #? Dust number density in m^-3; not sure about this value
+    n_d = np.array([0.06, 0.07, 0.09, 0.1, 0.3, 0.5, 0.7, 0.9, 1.01, 1.01, 1.01, 1.01]) * 10**11  #? Dust number density in m^-3; not sure about this value
 elif gas_type == "Argon" and I == 1:
-    n_d = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.1, 0.1, 1.01, 1.01, 1.01, 1.01]) * 10**11 
+    n_d = np.array([0.06, 0.07, 0.09, 0.1, 0.3, 0.5, 0.7, 0.9, 1.01, 1.01, 1.01, 1.01]) * 10**11 
 elif gas_type == "Neon" and I == 1.5:
-    n_d = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.1, 0.1, 1.01, 1.01, 1.01, 1.01]) * 10**11
+    n_d = np.array([0.06, 0.07, 0.09, 0.1, 0.3, 0.5, 0.7, 0.9, 1.01, 1.01, 1.01, 1.01]) * 10**11
 else:
-    n_d = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.1, 0.1, 1.01, 1.01, 1.01, 1.01]) * 10**11
+    n_d = np.array([0.06, 0.07, 0.09, 0.1, 0.3, 0.5, 0.7, 0.9, 1.01, 1.01, 1.01, 1.01]) * 10**11
     
     
 # Extract the data for the selected current
@@ -441,7 +441,7 @@ if gas_type == "Neon":
         "E_0": E_0.tolist(),
         "T_e": T_e.tolist(),
         "n_e0": n_e0.tolist(),
-        "z": z,
+        "z": z_depl.tolist(),
         "beta_T": beta_T2.tolist(),
         "textbook_graph_F_x": x.tolist(),
         "textbook_graph_F_y": y.tolist(),
@@ -461,7 +461,7 @@ else:
         "E_0": E_0_argon.tolist(),
         "T_e": T_e_argon.tolist(),
         "n_e0": n_e0_argon.tolist(),
-        "z": z,
+        "z": z_depl.tolist(),
         "beta_T": beta_T2.tolist(),
         "textbook_graph_F_x": x.tolist(),
         "textbook_graph_F_y": y.tolist(),

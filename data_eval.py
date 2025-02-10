@@ -13,7 +13,7 @@ from scipy.optimize import curve_fit
 
 #%% v mean plots
 
-gastype = "Neon" #Argon
+gastype = "Argon" #Argon
 current = "1p5mA"  #1p5mA
 
 json_folder = f"json_files/{gastype}/{current}"
@@ -134,14 +134,18 @@ plt.show()
 
 # Plotting the results + Theory FIT
 plt.figure(dpi=400)
-plt.errorbar(pressure_neg, v_mean_neg, yerr=v_error_neg, fmt='d', color='r', linewidth=1, markersize=3, capsize=2, mfc='w', ecolor='#004D40', label='Negative Polarity')
-plt.errorbar(pressure_pos, v_mean_pos, yerr=v_error_pos, fmt='o', color='r', linewidth=1, markersize=3, capsize=2, mfc='w', ecolor='#1E88E5', label='Positive Polarity')
+if current == "1mA":
+    plt.errorbar(pressure_neg, v_mean_neg, yerr=v_error_neg, fmt='s', color='r', linewidth=1, markersize=3, capsize=2, mfc='w', ecolor='#004D40', label='Exp. Data (-)')
+    plt.errorbar(pressure_pos, v_mean_pos, yerr=v_error_pos, fmt='s', color='r', linewidth=1, markersize=3, capsize=2, mfc='w', ecolor='#1E88E5', label='Exp. Data (+)')
+else:
+    plt.errorbar(pressure_neg, v_mean_neg, yerr=v_error_neg, fmt='d', color='r', linewidth=1, markersize=3, capsize=2, mfc='w', ecolor='#004D40', label='Exp. Data (-)')
+    plt.errorbar(pressure_pos, v_mean_pos, yerr=v_error_pos, fmt='d', color='r', linewidth=1, markersize=3, capsize=2, mfc='w', ecolor='#1E88E5', label='Exp. Data (+)')
 # Plot the nonlinear fit lines
-plt.plot(theory_data_strong["pos"]["p_fit"], theory_data_strong["pos"]["v_d_fit"], '--', color='#D81B60', label='Krapak Model $F_i^{strong}$', linewidth=.7)
+plt.plot(theory_data_strong["pos"]["p_fit"], theory_data_strong["pos"]["v_d_fit"], '--', color='#D81B60', label='$F_{id}^{strong}$', linewidth=.7)
 #plt.plot(theory_data_strong["neg"]["p_fit"], theory_data_strong["neg"]["v_d_fit"], '-.', color='#D81B60', label='Krapak Model $F_i^{strong}$ (-)', linewidth=.7)
-plt.plot(theory_data_weak["pos"]["p_fit"], theory_data_weak["pos"]["v_d_fit"], '--', color='#5DD9C9', label='Krapak Model $F_i^{weak}$', linewidth=.7)
+plt.plot(theory_data_weak["pos"]["p_fit"], theory_data_weak["pos"]["v_d_fit"], '--', color='#5DD9C9', label='$F_{id}^{weak,int}$', linewidth=.7)
 #plt.plot(theory_data_weak["neg"]["p_fit"], theory_data_weak["neg"]["v_d_fit"], '-.', color='#5DD9C9', label='Krapak Model $F_i^{weak}$ (-)', linewidth=.7)
-plt.plot(theory_schwabe2013["pos"]["p_fit"], theory_schwabe2013["pos"]["v_d_fit"], '--', color='#FFC107', label='Schwabe Model', linewidth=.7)
+plt.plot(theory_schwabe2013["pos"]["p_fit"], theory_schwabe2013["pos"]["v_d_fit"], '--', color='#FFC107', label='$F_{id}^{kin}$', linewidth=.7)
 #plt.plot(theory_schwabe2013["neg"]["p_fit"], theory_schwabe2013["neg"]["v_d_fit"], '-.', color='#FFC107', label='Schwabe Model (-)', linewidth=.7)
 # Labels, title, and legend
 plt.xlabel('Pressure [Pa]')
@@ -344,11 +348,13 @@ for file in file_paths:
     json_file = open(file, 'r')
     json_data = json.load(json_file)
     if file.split('/')[2].split('_')[0] == gas_type and file.split('/')[2].split('_')[1] == '1p5mA':
-        plt.errorbar(pressures, np.array(json_data["pos"]["beta_T"]), yerr=np.array(json_data["pos"]["beta_T"])*0.05, fmt="^", color=color_list[i], linewidth=.7, markersize=4, capsize=2, ecolor='black', mfc='w', label=r'$\beta_T$ ' + file.split('/')[2])
+        label_text = r'$\beta_T$ ' + file.split('/')[2].split('_')[2][:7] + " (1.5 mA)"
+        plt.errorbar(pressures, np.array(json_data["pos"]["beta_T"]), yerr=np.array(json_data["pos"]["beta_T"])*0.05, fmt="^", color=color_list[i], linewidth=.7, markersize=4, capsize=2, ecolor='black', mfc='w', label=label_text)
         #plt.errorbar(pressures, np.array(json_data["neg"]["beta_T"]), yerr=np.array(json_data["neg"]["beta_T"])*0.05, fmt=marker_list[i], color=color_list[i], label=r'$\beta_T$ ' + file.split('/')[2].split('_')[0].split('.')[0] + ' pos & neg', linewidth=.7, markersize=4, capsize=2, ecolor='black', mfc='w')
         i+=1
     elif file.split('/')[2].split('_')[0] == gas_type and file.split('/')[2].split('_')[1] == '1mA':
-        plt.errorbar(pressures, np.array(json_data["pos"]["beta_T"]), yerr=np.array(json_data["pos"]["beta_T"])*0.05, fmt="x", color=color_list[i], linewidth=.7, markersize=4, capsize=2, ecolor='black', label=r'$\beta_T$ ' + file.split('/')[2])#, mfc='w')
+        label_text = r'$\beta_T$ ' + file.split('/')[2].split('_')[2][:7] + " (1 mA)"
+        plt.errorbar(pressures, np.array(json_data["pos"]["beta_T"]), yerr=np.array(json_data["pos"]["beta_T"])*0.05, fmt="x", color=color_list[i], linewidth=.7, markersize=4, capsize=2, ecolor='black', label=label_text)#, mfc='w')
         #plt.errorbar(pressures, np.array(json_data["neg"]["beta_T"]), yerr=np.array(json_data["neg"]["beta_T"])*0.05, fmt=marker_list[i], color=color_list[i], label=r'$\beta_T$ ' + file.split('/')[2].split('_')[0].split('.')[0] + ' pos & neg', linewidth=.7, markersize=4, capsize=2, ecolor='black', mfc='w')
         i+=1
 
@@ -357,8 +363,8 @@ plt.xlabel('Pressure [Pa]')
 plt.ylabel(r'Scattering Parameter $\beta_T$')
 plt.grid(color='gray', linestyle='--', linewidth=0.2)
 plt.legend(loc='upper right')
-plt.title("Khrapak 2004 & 2005")
-plt.ylim( .6 , 2.6)
+plt.title(gas_type)
+plt.ylim( .55 , 2.6)
 plt.show()
 #%%
 
@@ -387,16 +393,16 @@ elif split == "theory":
 elif split == "gas":
     color_list = ["#D81B60", "#5DD9C9", "#FFC107", "#D81B60", "#5DD9C9", "#FFC107"]# "g", "b", "r"]
     marker_list = ["s", "s", "s", "d", "d", "d"]
-    label_list = ["Hutchinson", "Khrapak Model $F_i^{strong}$", "Khrapak Model $F_i^{weak}$", "Schwabe Model $F_i$", "Khrapak Model $F_i^{strong}$", "Khrapak Model $F_i^{weak}$", "Schwabe Model $F_i$"]
+    label_list = ["Hutchinson", "$F_{id}^{strong} \, (1mA)$", "$F_{id}^{weak,int}$", "$F_{id}^{kin}$", "$F_{id}^{strong} \, (1.5mA)$", "$F_{id}^{weak,int}$", "$F_{id}^{kin}$"]
 
 i = 0
 for file in file_paths:
     json_file = open(file, 'r')
     json_data = json.load(json_file)
     y_error = np.array(json_data["pos"]["F_i_error"])/np.array(json_data["pos"]["textbook_var"])
-    ax.errorbar(json_data["pos"]["textbook_graph_F_x"], json_data["pos"]["textbook_graph_F_y"], yerr=y_error, color=color_list[i], fmt=marker_list[i], label=file.split('_')[3].split('.')[0], linewidth=.7, mfc='w')
+    ax.errorbar(json_data["pos"]["textbook_graph_F_x"], json_data["pos"]["textbook_graph_F_y"], yerr=y_error, color=color_list[i], fmt=marker_list[i], label=file.split('_')[3].split('.')[0], markersize=4, linewidth=.6, mfc='w', capsize=1)
     i+=1
-ax.plot(json_data_textbook_fi["x"], json_data_textbook_fi["y"], color="black", label="Hutchinson", linewidth=1, linestyle="--")
+ax.plot(json_data_textbook_fi["x"], json_data_textbook_fi["y"], color="black", label="Hutchinson", linewidth=.85, linestyle="--")
 #ax.plot(theory_data_weak["pos"]["textbook_graph_F_x"], theory_data_weak["pos"]["textbook_graph_F_y"], color=color_list[1], marker="x", label="Khrapak F_{weak}", linewidth=.7)
 #ax.plot(theory_schwabe2013["pos"]["textbook_graph_F_x"], theory_schwabe2013["pos"]["textbook_graph_F_y"], color=color_list[2], marker="o", label="Schwabe F", linewidth=.7, mfc='w')
 
