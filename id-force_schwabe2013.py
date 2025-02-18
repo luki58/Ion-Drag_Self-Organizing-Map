@@ -90,30 +90,30 @@ def e_field(x, I):
 # Model:
 model = "Schwabe2013"
 # Variable Parameters
-gas_type = "Neon" #or "Neon"
-I = 1.5  # mA
-polarity = "pos" #pos or neg
+gas_type = "Argon" #or "Neon"
+I = 1  # mA
+polarity = "neg" #pos or neg
 charge_depletion = 1
 
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
-    E_multiplier = .95
-    ne_multiplier = 1.3
+    E_multiplier = .9
+    ne_multiplier = .7
     Te_multiplier = 1.
 elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
     E_multiplier = .9
-    ne_multiplier = .8
+    ne_multiplier = .7
     Te_multiplier = 1.
 elif gas_type == "Argon" and I == 1 and polarity == "pos":
     E_multiplier = .9
-    ne_multiplier = 1.
+    ne_multiplier = 1.2
     Te_multiplier = 1
 elif gas_type == "Argon" and I == 1 and polarity == "neg":
-    E_multiplier = 1.
-    ne_multiplier = .6
-    Te_multiplier = 1.
+    E_multiplier = .9
+    ne_multiplier = 1.2
+    Te_multiplier = 1
 elif gas_type == "Neon" and I == 1 and polarity == "neg":
-    E_multiplier = 1.25
-    ne_multiplier = 1.15
+    E_multiplier = .9
+    ne_multiplier = .9
     Te_multiplier = 1
 elif gas_type == "Neon" and I == 1 and polarity == "pos":
     E_multiplier = .9
@@ -121,10 +121,10 @@ elif gas_type == "Neon" and I == 1 and polarity == "pos":
     Te_multiplier = 1
 elif gas_type == "Neon" and I == 1.5 and polarity == "neg":
     E_multiplier = 1.1
-    ne_multiplier = .8
+    ne_multiplier = .7
     Te_multiplier = 1
 else:
-    E_multiplier = .9
+    E_multiplier = 1.1
     ne_multiplier = .7
     Te_multiplier = 1
     
@@ -134,21 +134,21 @@ p = np.array([15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 120])  # Pa
 
 if gas_type == "Neon":
     #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-    z = [0.37, 0.36, 0.35, .34, .33, .295, .27, .27, .27, .27, .27, .32]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al. # Wimmer et al. z = [0.54, 0.43, 0.42, 0.41, 0.32]
+    z = [0.3, 0.32, 0.33, 0.34, .33, .3, .3, .3, .3, .3, .3, .3]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al. # Wimmer et al. z = [0.54, 0.43, 0.42, 0.41, 0.32]
     epstein = [1.44] * len(p)  # Neutral damping Epstein coefficient NEON = 1.44; ARGON = 1.26!
 else:
-    z = [.56, .48, .45, .43, .42, .41, .4, .38, .37, .36, .35, .35]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al.
+    z = [.58, .49, .45, .43, .42, .41, .4, .38, .37, .36, .35, .35]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al.
     epstein = [1.26] * len(p)  # Neutral damping Epstein coefficient NEON = 1.44; ARGON = 1.26!
     
 a = (3.4 / 2) * 10**(-6)  # Micrometer particle radius
 
 if gas_type == "Argon" and I == 1.5:
-    n_d = np.array([0.06, 0.07, 0.09, 0.1, 0.3, 0.5, 0.7, 0.9, 1.01, 1.01, 1.01, 1.01]) * 10**11
+    n_d = np.array([0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.8]) * 10**11
 elif gas_type == "Argon" and I == 1:
-    n_d = np.array([0.06, 0.07, 0.09, 0.1, 0.3, 0.5, 0.7, 0.9, 1.01, 1.01, 1.01, 1.01]) * 10**11
+    n_d = np.array([0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.8]) * 10**11
 elif gas_type == "Neon":
                 #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-    n_d = np.array([0.06, 0.07, 0.09, 0.1, 0.3, 0.5, 0.7, 0.9, 1.01, 1.01, 1.01, 1.01]) * 10**11
+    n_d = np.array([0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.8]) * 10**11
 # Extract the data for the selected current
 try:
     E_0_argon, T_e_argon, n_e0_argon = extract_plasma_data(data, selected_current, p)

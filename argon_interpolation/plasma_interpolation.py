@@ -130,7 +130,7 @@ argon_df = {
     "P_Pa": [10, 20, 40, 60],  # Pressures in Pascal
     "1mA_n": [1.81 , 2.43, 4.01, 4.26],  # Electron density (10^8 cm^-3) 10Pa = 2.81 #CORRECTED
     "1mA_T": [4.23, 4.41, 4.62, 4.65],  # MODEL DATA
-    "1mA_E": [1.58, 2.155, 2.95, 3.210],  # Electric field (V/cm) #CORRECTED
+    "1mA_E": [1.78, 2.255, 2.95, 3.210],  # Electric field (V/cm) #CORRECTED
     "2mA_n": [5.43, 8.14, 7.42],  # Electron density (10^8 cm^-3) 20 - 40 Pa #CORRECTED
     "2mA_T": [4.3, 4.58, 4.6],  # MODEL DATA
     "2mA_E": [3.2, 3.45, 3.8],  # MODEL DATA
