@@ -13,8 +13,8 @@ from scipy.optimize import curve_fit
 
 #%% v mean plots
 
-gastype = "Neon" #Argon
-current = "1p5mA"  #1p5mA
+gastype = "Argon" #Argon
+current = "1mA"  #1p5mA
 
 json_folder = f"json_files/{gastype}/{current}"
         
@@ -158,20 +158,47 @@ plt.ylim(0, 70)
 plt.show()
 
 #%%
+
+# =============================================================================
+# F_i measured
+# =============================================================================
+
 gas_type = "Argon"
+current = "1p5mA"
 
 file_paths_fi = [
-    #"json_files/exp/Argon_1mA_exp.json",
     "json_files/exp/Argon_1p5mA_exp.json",
-    #"json_files/exp/Neon_1mA_exp.json"
     "json_files/exp/Neon_1p5mA_exp.json"
 ]
+file_path2 = [
+    "json_files/exp/Argon_1mA_exp.json",
+    "json_files/exp/Neon_1mA_exp.json"
+    ]
+
+file_path_theory = [
+    "json_files/theory/Argon_1mA_Khrapak0405_weak.json",
+    "json_files/theory/Neon_1mA_Schwabe2013.json"
+    ]
+
+file_path_theory_1p5mA = [
+    "json_files/theory/Argon_1p5mA_Schwabe2013.json",
+    "json_files/theory/Neon_1p5mA_Schwabe2013.json"
+    ]
+
+if current == "1mA": 
+    file_paths_fi = file_path2
+    file_path_theory = file_path_theory_1p5mA
 
 # Define fmt_list (adjust markers as needed)
 fmt_list = ['o', 's', 'D', '^', 'v']  # Example markers
+plot_color = "#FFC107"
+if gas_type == "Argon" and current=="1mA": plot_color ="#5DD9C9"
+# "#D81B60", "#5DD9C9", "#FFC107"
+p = np.array([15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 120])
 
-plt.figure(dpi=300)
+plt.figure(dpi=600)
 
+### EXP DATA PLOT ###
 for file_path in file_paths_fi:
     file_name = os.path.basename(file_path)  # Extract just the filename
 
@@ -188,8 +215,8 @@ for file_path in file_paths_fi:
             np.abs(np.array(json_data["neg"]["F_i"])) * 10**13, 
             yerr=np.array(json_data["neg"]["F_i_error"]) * 10**13, 
             fmt=fmt_list[1], color='#004D40', 
-            label=f'$F_i$ {current_value} (neg)', 
-            linewidth=0.7, markersize=2.5, capsize=2, ecolor='black'
+            label='$F_{id}$' + f' (-)  {current_value}', 
+            linewidth=0.5, markersize=2.5, capsize=2, ecolor='black'
         )
         # Plot negative ion-drag force
         plt.errorbar(
@@ -197,9 +224,30 @@ for file_path in file_paths_fi:
             np.abs(np.array(json_data["pos"]["F_i"])) * 10**13, 
             yerr=np.array(json_data["pos"]["F_i_error"]) * 10**13, 
             fmt=fmt_list[2], color='#1E88E5', 
-            label=f'$F_i$ {current_value} (pos)', 
-            linewidth=0.7, markersize=2.5, capsize=2, ecolor='black'
+            label='$F_{id}$' + f' (+) {current_value}', 
+            linewidth=0.5, markersize=2.5, capsize=2, ecolor='black'
         )
+### THEORY DATA PLOT
+for file_path in file_path_theory:
+    file_name = os.path.basename(file_path)  # Extract just the filename
+
+    if file_name.startswith(gas_type):  # Check gas type
+        with open(file_path, 'r') as json_file:
+            json_data = json.load(json_file)
+
+        # Extract current value from filename
+        current_value = current.replace('p', '.').replace('mA', ' mA')
+
+        # Plot negative ion-drag force
+        plt.errorbar(
+            p, 
+            np.abs(np.array(json_data["pos"]["F_i"])) * 10**13, 
+            yerr=np.array(json_data["pos"]["F_i_error"]) * 10**13, 
+            fmt='none', 
+            label='$F_{id}^{kin}$', 
+            linewidth=0.7, markersize=2.5, capsize=2, ecolor=plot_color
+        )
+        plt.plot(p,np.abs(np.array(json_data["pos"]["F_i"])) * 10**13, linewidth=0.7, linestyle="--", color=plot_color)
 
 
 # Labels, title, and legend
@@ -209,9 +257,14 @@ plt.grid(color='gray', linestyle='--', linewidth=0.2)
 plt.legend(loc='upper right')
 plt.title(f"{gas_type}")
 plt.xlim(0, 140)
-plt.ylim(-.4, 1.5)
+plt.ylim(-.2, 1)
 plt.show()
 #%%
+
+# =============================================================================
+# z
+# =============================================================================
+
 p = np.array([15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 120])  # Pa
 # Plotting Charge Number z
 plt.figure(figsize=(5, 3), dpi=300)
@@ -253,10 +306,10 @@ plt.show()
 # =============================================================================
 
 file_paths = [
-    "json_files/theory/Argon_1mA_Khrapak0405_strong.json",
-    "json_files/theory/Argon_1p5mA_Khrapak0405_strong.json",
-    "json_files/theory/Neon_1mA_Khrapak0405_weak.json",
-    "json_files/theory/Neon_1p5mA_Khrapak0405_weak.json"
+    "json_files/theory/Argon_1mA_Schwabe2013.json",
+    "json_files/theory/Argon_1p5mA_Schwabe2013.json",
+    "json_files/theory/Neon_1mA_Schwabe2013.json",
+    "json_files/theory/Neon_1p5mA_Schwabe2013.json"
 ]
 
 data = {}
@@ -354,12 +407,17 @@ for i, param in enumerate(parameters):
 plt.tight_layout()
 plt.show()
 #%%
+
+# =============================================================================
+# Scattering parameter \beta
+# =============================================================================
+
 # Plotting scattering parameter \beta_T
 plt.figure(figsize=(7, 4), dpi=300)
 #path = json_folder.split('/')[0] + "/theory/"
 # Corrected path building and filtering logic
 
-gas_type = "Argon"
+gas_type = "Neon"
 
 file_paths = [
     os.path.join(json_folder.split('/')[0] + "/theory/", filename)
@@ -375,16 +433,23 @@ print(file_paths)
 color_list = ["#D81B60", "#5DD9C9", "#D81B60", "#5DD9C9", "#5DD9C9", "#FFC107","#D81B60", "#5DD9C9", "#FFC107", "#D81B60", "#5DD9C9", "#FFC107"]
 marker_list = ["s", "^", "d", "o", "s", "^", "d", "o","s", "^", "d", "o", "s", "^", "d", "o"]
 i=0
+
 for file in file_paths:
     json_file = open(file, 'r')
     json_data = json.load(json_file)
     if file.split('/')[2].split('_')[0] == gas_type and file.split('/')[2].split('_')[1] == '1p5mA':
-        label_text = r'$\beta_T$ ' + file.split('/')[2].split('_')[2][:7] + " (1.5 mA)"
+        if file.split('/')[2].split('_')[2][:7] == "Khrapak":
+            label_text = r"$\beta_T^{weak,int}$ (1.5 mA)"
+        else:
+            label_text = r"$\beta_T^{kin} \,\,\,\,\,\,\,\,\,\,\,\,\,$ (1.5 mA)"
         plt.errorbar(pressures, np.array(json_data["pos"]["beta_T"]), yerr=np.array(json_data["pos"]["beta_T"])*0.05, fmt="^", color=color_list[i], linewidth=.7, markersize=4, capsize=2, ecolor='black', mfc='w', label=label_text)
         #plt.errorbar(pressures, np.array(json_data["neg"]["beta_T"]), yerr=np.array(json_data["neg"]["beta_T"])*0.05, fmt=marker_list[i], color=color_list[i], label=r'$\beta_T$ ' + file.split('/')[2].split('_')[0].split('.')[0] + ' pos & neg', linewidth=.7, markersize=4, capsize=2, ecolor='black', mfc='w')
         i+=1
     elif file.split('/')[2].split('_')[0] == gas_type and file.split('/')[2].split('_')[1] == '1mA':
-        label_text = r'$\beta_T$ ' + file.split('/')[2].split('_')[2][:7] + " (1 mA)"
+        if file.split('/')[2].split('_')[2][:7] == "Khrapak":
+            label_text = r"$\beta_T^{weak,int}$ (1 mA)"
+        else:
+            label_text = r"$\beta_T^{kin} \,\,\,\,\,\,\,\,\,\,\,\,\,$ (1 mA)"
         plt.errorbar(pressures, np.array(json_data["pos"]["beta_T"]), yerr=np.array(json_data["pos"]["beta_T"])*0.05, fmt="x", color=color_list[i], linewidth=.7, markersize=4, capsize=2, ecolor='black', label=label_text)#, mfc='w')
         #plt.errorbar(pressures, np.array(json_data["neg"]["beta_T"]), yerr=np.array(json_data["neg"]["beta_T"])*0.05, fmt=marker_list[i], color=color_list[i], label=r'$\beta_T$ ' + file.split('/')[2].split('_')[0].split('.')[0] + ' pos & neg', linewidth=.7, markersize=4, capsize=2, ecolor='black', mfc='w')
         i+=1
@@ -395,9 +460,13 @@ plt.ylabel(r'Scattering Parameter $\beta_T$')
 plt.grid(color='gray', linestyle='--', linewidth=0.2)
 plt.legend(loc='upper right')
 plt.title(gas_type)
-plt.ylim( .55 , 2.6)
+plt.ylim( 0 , 2.8)
 plt.show()
 #%%
+
+# =============================================================================
+# Comparison F_i [log_scale]
+# =============================================================================
 
 textbook_fi = open("json_files/textbook_fi.json", 'r')
 json_data_textbook_fi = json.load(textbook_fi)
@@ -476,13 +545,14 @@ ax.plot(json_data_textbook_fi["x"], json_data_textbook_fi["y"], color="black", l
 ax.set_yscale('log')
 ax.set_xscale('log')
 
+# Setting axis limits
+ax.set_xlim(0.04, 18)
+ax.set_ylim(10, 10000)
+
 # Labeling axes
 plt.xlabel('$u_i / v_{th,i}$', fontsize=10)
 plt.ylabel('$F_i / \pi a^2 n_i m_i v_{th,i}^2$', fontsize=10)
 
-# Setting axis limits
-ax.set_xlim(0.04, 18)
-ax.set_ylim(0, 10000)
 
 # Adding grid, legend, and title
 ax.grid(color='grey', linestyle='--', linewidth=0.4, alpha=0.5)

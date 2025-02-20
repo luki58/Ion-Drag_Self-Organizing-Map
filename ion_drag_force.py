@@ -89,52 +89,48 @@ def e_field(x, I):
 # Model:
 model = "Khrapak0405"
 # Theory == 1 refers to the weak and intermediate coupling regime 
-# Theory == 2 refers to the strongly coupling regime between ions and dust particles 
+# Theory == 2 refers to the strongly coupling regime between ions and dust particles
+theory = 1
 # Variable Parameters
-gas_type = "Neon" #or "Neon"
-I = 1  # mA
+gas_type = "Argon" #or "Neon"
+I = 1 # mA
 polarity = "neg" #pos or neg
+
+charge_depletion = 1
+T_e_argon_neon_translation = 0.45
 
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
     E_multiplier = .9
-    ne_multiplier = .7
-    theory = 1
-    charge_depletion = 1
+    ne_multiplier = .75
+    Te_multiplier = 1.2
 elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
     E_multiplier = .9
-    ne_multiplier = .7
-    theory = 1
-    charge_depletion = 1
+    ne_multiplier = .75
+    Te_multiplier = 1.2
 elif gas_type == "Argon" and I == 1 and polarity == "pos":
     E_multiplier = .9
-    ne_multiplier = 1.2
-    theory = 1
-    charge_depletion = 1
+    ne_multiplier = .8
+    Te_multiplier = 1.3
 elif gas_type == "Argon" and I == 1 and polarity == "neg":
     E_multiplier = .9
-    ne_multiplier = 1.2
-    theory = 1
-    charge_depletion = 1
+    ne_multiplier = .8
+    Te_multiplier = 1.3
 elif gas_type == "Neon" and I == 1 and polarity == "neg":
-    E_multiplier = .9
-    ne_multiplier = .9
-    theory = 1
-    charge_depletion = 1
+    E_multiplier = 1.
+    ne_multiplier = .8
+    Te_multiplier = 1
 elif gas_type == "Neon" and I == 1 and polarity == "pos":
-    E_multiplier = .9
-    ne_multiplier = .9
-    theory = 1
-    charge_depletion = 1
+    E_multiplier = 1.
+    ne_multiplier = .8
+    Te_multiplier = 1
 elif gas_type == "Neon" and I == 1.5 and polarity == "neg":
     E_multiplier = 1.1
     ne_multiplier = .7
-    theory = 1
-    charge_depletion = 1
+    Te_multiplier = 1
 else:
     E_multiplier = 1.1
     ne_multiplier = .7
-    theory = 1
-    charge_depletion = 1
+    Te_multiplier = 1
     
 selected_current = str(I)+"mA"
 #
@@ -183,6 +179,10 @@ E_0_calc = [e_field(15, I), e_field(20, I), e_field(25, I), e_field(30, I), e_fi
 E_0 = np.multiply(E_0_calc, -100*E_multiplier)  # V/m
 T_e = np.array([T_e_interpolation(15, I),T_e_interpolation(20, I),T_e_interpolation(25, I), T_e_interpolation(30, I), T_e_interpolation(40, I), T_e_interpolation(50, I), T_e_interpolation(60, I), T_e_interpolation(70, I), T_e_interpolation(80, I), T_e_interpolation(90, I), T_e_interpolation(100, I), T_e_interpolation(120, I)])
 n_e0 = np.multiply([n_e_interpolation(15, I),n_e_interpolation(20, I), n_e_interpolation(25, I), n_e_interpolation(30, I), n_e_interpolation(40, I), n_e_interpolation(50, I), n_e_interpolation(60, I), n_e_interpolation(70, I), n_e_interpolation(80, I), n_e_interpolation(90, I), n_e_interpolation(100, I), n_e_interpolation(120, I)], ne_multiplier * 10**14)
+if gas_type == "Argon":
+    T_e_argon = T_e * Te_multiplier * T_e_argon_neon_translation
+else:
+    T_e = T_e * Te_multiplier
 
 T_n = 0.025  # eV
 if gas_type == "Neon":
