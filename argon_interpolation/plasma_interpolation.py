@@ -106,6 +106,16 @@ def plot_stored_data(data_points_topolot_T, data_points_topolot_n, file_name="ar
     plt.tight_layout()
     plt.show()
 
+
+def print_fitted_models(fit_results):
+    """Print the equations for the fitted models."""
+    print("\nFitted Model Equations:\n")
+
+    for fit_name, result in fit_results.items():
+        if fit_name == "Power Law":
+            a, b = result["E_fit_params"]
+            print(f"Power Law Model for E: E(P) = {a:.4f} * P^{b:.4f}")
+
 # Define possible fitting models for the data
 
 def linear_model(x, a, b):
@@ -128,12 +138,12 @@ def logarithmic_model(x, a, b):
 
 argon_df = {
     "P_Pa": [10, 20, 40, 60],  # Pressures in Pascal
-    "1mA_n": [2.81 , 2.93, 4.01, 4.26],  # Electron density (10^8 cm^-3) 10Pa = 2.81, 20PA = 2.43 original [#CORRECTED]
+    "1mA_n": [2.81 , 2.93, 4.01, 4.46],  # Electron density (10^8 cm^-3) 10Pa = 2.81, 20PA = 2.43 original, 40Pa = 4.26 [#CORRECTED]
     "1mA_T": [4.23, 4.41, 4.62, 4.65],  # MODEL DATA
-    "1mA_E": [1.78, 2.255, 2.95, 3.210],  # Electric field (V/cm) #CORRECTED
-    "2mA_n": [5.43, 8.14, 7.42],  # Electron density (10^8 cm^-3) 20 - 40 Pa #CORRECTED
+    "1mA_E": [1.98, 2.265, 3.05, 3.310],  # Electric field (V/cm) #CORRECTED
+    "2mA_n": [5.43, 8.14, 7.82],  # Electron density (10^8 cm^-3) 20 - 40 Pa #CORRECTED
     "2mA_T": [4.3, 4.58, 4.6],  # MODEL DATA
-    "2mA_E": [3.2, 3.45, 3.8],  # MODEL DATA
+    "2mA_E": [3.55, 3.45, 4.15],  # MODEL DATA
 }
 
 data_points_topolot_T = [[4.13, 4.555, 4.795, 5.23],[4.94, 5.08, 4.37]] #"1mA_T" & "2mA_T" # Electron temperature (eV)
@@ -144,24 +154,24 @@ data_points_topolot = [[1.58, 1.855, 2.395, 4.10],[2.0, 2.53, 4.38]] #Electric f
 
 # Fit models to the data and evaluate fits for 1mA
 
-current = "1p5mA"
+current = "2mA"
 
 if current == "1mA":
     x_data = np.array(argon_df["P_Pa"])
     x_data_n = np.array(argon_df["P_Pa"][1:])
     y_data_n = np.array(argon_df["1mA_n"][1:])
     y_data_T = np.array(argon_df["1mA_T"])
-    y_data_E = np.array(argon_df["1mA_E"])
+    y_data_E = np.array(argon_df["1mA_E"]) * 0.965
 elif current == "2mA":
     x_data_n = np.array(argon_df["P_Pa"][1:])
     y_data_n = np.array(argon_df["2mA_n"])
     y_data_T = np.array(argon_df["2mA_T"])
-    y_data_E = np.array(argon_df["2mA_E"])
+    y_data_E = np.array(argon_df["2mA_E"]) * 1.18
 elif current == "1p5mA":
     x_data_n = np.array(argon_df["P_Pa"][1:])
     y_data_n = 0.5 * (np.array(argon_df["1mA_n"][1:]) + np.array(argon_df["2mA_n"]))  # Interpolated n np.array(argon_df["P_Pa"][1:])
     y_data_T = 0.5 * (np.array(argon_df["1mA_T"][1:]) + np.array(argon_df["2mA_T"]))
-    y_data_E = 0.5 * (np.array(argon_df["1mA_E"][1:]) + np.array(argon_df["2mA_E"]))
+    y_data_E = 0.5 * (np.array(argon_df["1mA_E"][1:]) + np.array(argon_df["2mA_E"])) * 1.15
 else:
     print("Wrong Input")
 
@@ -169,18 +179,15 @@ else:
 
 fits = {
     "Linear": linear_model,
-    #"Quadratic": quadratic_model,
+    "Quadratic": quadratic_model,
     "Power Law": power_law_model,
     "Logarithmic": logarithmic_model,
     #"Cubic": cubic_model,
     #"Exponential": exponential_model,
 }
 
-
-
 fit_results = {}
 pressure_fit_range = np.linspace(10, 120, 23)  # Pressure range for evaluation
-
 
 for fit_name, model in fits.items():
     try:
@@ -199,10 +206,12 @@ for fit_name, model in fits.items():
             "n_fit": model(pressure_fit_range, *n_params),
             "T_fit": model(pressure_fit_range, *T_params),
             "E_fit": model(pressure_fit_range, *E_params),
+            "E_fit_params": E_params 
         }
-
     except Exception as e:
         print(f"Failed to fit {fit_name} model: {e}")
+
+
 
 if 'p' in current:
     current = current.replace('p', '.')
@@ -251,6 +260,8 @@ plt.tight_layout()
 plt.show()
 
 #
+
+print_fitted_models(fit_results)
 
 store_fitted_data(fit_results, current, pressure_fit_range, file_name="argon_params.json")
 plot_stored_data(data_points_topolot_T, data_points_topolot_n, "argon_params.json")

@@ -98,37 +98,37 @@ charge_depletion = 1
 T_e_argon_neon_translation = 0.45
 
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
-    E_multiplier = .9
+    E_multiplier = 1.03
     ne_multiplier = .75
     Te_multiplier = 1.2
 elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
-    E_multiplier = .9
+    E_multiplier = 1.0
     ne_multiplier = .75
     Te_multiplier = 1.2
 elif gas_type == "Argon" and I == 1 and polarity == "pos":
-    E_multiplier = .9
+    E_multiplier = 0.98
     ne_multiplier = .8
     Te_multiplier = 1.3
 elif gas_type == "Argon" and I == 1 and polarity == "neg":
-    E_multiplier = .9
+    E_multiplier = 0.98
     ne_multiplier = .8
     Te_multiplier = 1.3
 elif gas_type == "Neon" and I == 1 and polarity == "neg":
-    E_multiplier = .9
+    E_multiplier = 1.2
     ne_multiplier = .8
-    Te_multiplier = 1
+    Te_multiplier = .8
 elif gas_type == "Neon" and I == 1 and polarity == "pos":
-    E_multiplier = .9
+    E_multiplier = 1.14
     ne_multiplier = .8
-    Te_multiplier = 1
+    Te_multiplier = .8
 elif gas_type == "Neon" and I == 1.5 and polarity == "neg":
-    E_multiplier = 1.1
+    E_multiplier = 1.14
     ne_multiplier = .7
-    Te_multiplier = 1
+    Te_multiplier = .8
 else:
-    E_multiplier = 1.1
+    E_multiplier = 1.2
     ne_multiplier = .7
-    Te_multiplier = 1
+    Te_multiplier = .8
     
 selected_current = str(I)+"mA"
 #
@@ -433,7 +433,8 @@ if gas_type == "Neon":
         "beta_T": beta_T.tolist(),
         "textbook_graph_F_x": x.tolist(),
         "textbook_graph_F_y": y.tolist(),
-        "textbook_var": t_var.tolist()
+        "textbook_var": t_var.tolist(),
+        "F_e/F_i": (abs(F_e)/F_i).tolist()
         }
     }
 else:
@@ -453,7 +454,8 @@ else:
         "beta_T": beta_T.tolist(),
         "textbook_graph_F_x": x.tolist(),
         "textbook_graph_F_y": y.tolist(),
-        "textbook_var": t_var.tolist()
+        "textbook_var": t_var.tolist(),
+        "F_e/F_i": (abs(F_e)/F_i).tolist()
         }
     }
 

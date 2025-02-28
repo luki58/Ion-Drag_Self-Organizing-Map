@@ -90,37 +90,37 @@ def e_field(x, I):
 def function_all(gas_type, I, polarity):
     
     if gas_type == "Argon" and I == 1.5 and polarity == "neg":
-        E_multiplier = .9
+        E_multiplier = 1.03
         ne_multiplier = .75
-        T_e_multiplier = 1.2
+        T_e_multiplier = 1.3
     elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
-        E_multiplier = .9
+        E_multiplier = 1.0
         ne_multiplier = .75
-        T_e_multiplier = 1.2
+        T_e_multiplier = 1.3
     elif gas_type == "Argon" and I == 1 and polarity == "pos":
-        E_multiplier = .9
+        E_multiplier = 0.95
         ne_multiplier = .8
         T_e_multiplier = 1.3
     elif gas_type == "Argon" and I == 1 and polarity == "neg":
-        E_multiplier = .9
+        E_multiplier = 0.98
         ne_multiplier = .8
         T_e_multiplier = 1.3
     elif gas_type == "Neon" and I == 1 and polarity == "neg":
-        E_multiplier = .9
+        E_multiplier = 1
         ne_multiplier = .8
-        T_e_multiplier = 1.
+        T_e_multiplier = 1
     elif gas_type == "Neon" and I == 1 and polarity == "pos":
-        E_multiplier = .9
+        E_multiplier = .95
         ne_multiplier = .8
-        T_e_multiplier = 1.
+        T_e_multiplier = 1
     elif gas_type == "Neon" and I == 1.5 and polarity == "neg":
-        E_multiplier = 1.1
+        E_multiplier = 1.14
         ne_multiplier = .7
-        T_e_multiplier = 1.
+        T_e_multiplier = .8
     else:
-        E_multiplier = 1.1
+        E_multiplier = 1.2
         ne_multiplier = .7
-        T_e_multiplier = 1.
+        T_e_multiplier = 0.8
         
     charge_depletion = 1
     T_e_argon_neon_translation = 0.45
@@ -273,8 +273,8 @@ def function_all(gas_type, I, polarity):
     if gas_type == "Neon":
         F_e = Z_d * e * E_0
         factor = np.multiply(epstein, (4 / 3) * np.pi * a**2 * m_neon * v_tn * (p / (T_n * eV_K * k)))
-        F_i = abs(F_e) - abs(exp_data * factor/1000)
-        F_i_error = (exp_error* factor/1000)
+        F_i = abs(F_e) - abs(exp_data) * factor/1000
+        F_i_error = (exp_error)* factor/1000
         graph_value = np.pi * a**2 * n_i0 * m_neon * v_ti**2
         y = F_i/graph_value
         y_error = F_i_error/graph_value
@@ -282,8 +282,8 @@ def function_all(gas_type, I, polarity):
     else:
         F_e = Z_d * e * E_0_argon
         factor = np.multiply(epstein, (4 / 3) * np.pi * a**2 * m_argon * v_tn * (p / (T_n * eV_K * k)))
-        F_i = abs(F_e) - abs(exp_data * factor/1000)
-        F_i_error = (exp_error* factor/1000)
+        F_i = abs(F_e) - abs(exp_data) * factor/1000
+        F_i_error = (exp_error)* factor/1000
         graph_value = np.pi * a**2 * n_i0 * m_argon * v_ti**2
         y = F_i/graph_value
         y_error = F_i_error/graph_value
@@ -299,7 +299,10 @@ def function_all(gas_type, I, polarity):
             "textbook_var": graph_value.tolist(),
             "textbook_x": x.tolist(),
             "textbook_y": y.tolist(),
-            "textbook_y_error": y_error.tolist()
+            "textbook_y_error": y_error.tolist(),
+            "F_n/F_e": (abs(factor*exp_data/1000)/F_e).tolist(),
+            "F_n/F_i": (abs(factor*exp_data/1000)/F_i).tolist(),
+            "F_e/F_i": (abs(F_e)/F_i).tolist()
         }
     }
     

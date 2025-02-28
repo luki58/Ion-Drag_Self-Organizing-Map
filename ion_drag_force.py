@@ -94,43 +94,43 @@ theory = 1
 # Variable Parameters
 gas_type = "Argon" #or "Neon"
 I = 1 # mA
-polarity = "neg" #pos or neg
+polarity = "pos" #pos or neg
 
 charge_depletion = 1
 T_e_argon_neon_translation = 0.45
 
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
-    E_multiplier = .9
+    E_multiplier = 1.03
     ne_multiplier = .75
     Te_multiplier = 1.2
 elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
-    E_multiplier = .9
+    E_multiplier = 1.0
     ne_multiplier = .75
     Te_multiplier = 1.2
 elif gas_type == "Argon" and I == 1 and polarity == "pos":
-    E_multiplier = .9
+    E_multiplier = 0.98
     ne_multiplier = .8
     Te_multiplier = 1.3
 elif gas_type == "Argon" and I == 1 and polarity == "neg":
-    E_multiplier = .9
+    E_multiplier = 0.98
     ne_multiplier = .8
     Te_multiplier = 1.3
 elif gas_type == "Neon" and I == 1 and polarity == "neg":
-    E_multiplier = 1.
+    E_multiplier = 1.2
     ne_multiplier = .8
-    Te_multiplier = 1
+    Te_multiplier = .7
 elif gas_type == "Neon" and I == 1 and polarity == "pos":
-    E_multiplier = 1.
+    E_multiplier = 1.14
     ne_multiplier = .8
-    Te_multiplier = 1
+    Te_multiplier = .7
 elif gas_type == "Neon" and I == 1.5 and polarity == "neg":
-    E_multiplier = 1.1
+    E_multiplier = 1.14
     ne_multiplier = .7
-    Te_multiplier = 1
+    Te_multiplier = .8
 else:
-    E_multiplier = 1.1
+    E_multiplier = 1.2
     ne_multiplier = .7
-    Te_multiplier = 1
+    Te_multiplier = .8
     
 selected_current = str(I)+"mA"
 #
@@ -187,7 +187,8 @@ else:
 T_n = 0.025  # eV
 if gas_type == "Neon":
     l_i = np.divide(T_n  * eV_K * k, p * sigma_neon)
-    T_i = (np.multiply(2 / 9 * np.abs(np.multiply(E_0, 1)) * e / k, l_i) + 0.03 * eV_K)
+    arr = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    T_i = (np.multiply(2 / 9 * np.abs(np.multiply(E_0, arr)) * e / k, l_i) + 0.03 * eV_K)
 else:
     l_i = np.divide(T_n  * eV_K * k, p * sigma_argon)
     T_i = (np.multiply(2 / 9 * np.abs(np.multiply(E_0_argon, 1)) * e / k, l_i) + 0.03 * eV_K)
@@ -221,12 +222,12 @@ def oml_func(x):
 
 '''    Havnes Parameter    '''
 if gas_type == 'Neon':
-    P = np.multiply(np.multiply(695*(1.3/2),T_e),np.divide(n_d,n_i0))
-    P2 = np.multiply(Z_d/z,np.divide(n_d,n_i0))
+    P = np.multiply(np.multiply(695*(a*10**(6)),T_e),np.divide(n_d,n_i0))
+    P2 = np.multiply(Z_d,np.divide(n_d,n_i0))
     tau = np.divide(T_e,T_i)
 else:
-    P = np.multiply(np.multiply(695*(1.3/2),T_e_argon),np.divide(n_d,n_i0))
-    P2 = np.multiply(Z_d/z,np.divide(n_d,n_i0))
+    P = np.multiply(np.multiply(695*(a*10**(6)),T_e_argon),np.divide(n_d,n_i0))
+    P2 = np.multiply(Z_d,np.divide(n_d,n_i0))
     tau = np.divide(T_e_argon,T_i)
     
 #
@@ -471,7 +472,8 @@ if gas_type == "Neon":
         "beta_T": beta_T.tolist(),
         "textbook_graph_F_x": x.tolist(),
         "textbook_graph_F_y": y.tolist(),
-        "textbook_var": t_var.tolist()
+        "textbook_var": t_var.tolist(),
+        "F_e/F_i": (abs(F_e)/F_i).tolist()
         }
     }
 else:
@@ -491,7 +493,8 @@ else:
         "beta_T": beta_T.tolist(),
         "textbook_graph_F_x": x.tolist(),
         "textbook_graph_F_y": y.tolist(),
-        "textbook_var": t_var.tolist()
+        "textbook_var": t_var.tolist(),
+        "F_e/F_i": (abs(F_e)/F_i).tolist()
         }
     }
 

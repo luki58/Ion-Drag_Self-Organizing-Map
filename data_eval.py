@@ -13,7 +13,7 @@ from scipy.optimize import curve_fit
 
 #%% v mean plots
 
-gastype = "Argon" #Argon
+gastype = "Neon" #Argon
 current = "1mA"  #1p5mA
 
 json_folder = f"json_files/{gastype}/{current}"
@@ -163,7 +163,7 @@ plt.show()
 # F_i measured
 # =============================================================================
 
-gas_type = "Argon"
+gas_type = "Neon"
 current = "1p5mA"
 
 file_paths_fi = [
@@ -173,27 +173,39 @@ file_paths_fi = [
 file_path2 = [
     "json_files/exp/Argon_1mA_exp.json",
     "json_files/exp/Neon_1mA_exp.json"
-    ]
+]
 
 file_path_theory = [
     "json_files/theory/Argon_1mA_Khrapak0405_weak.json",
+    "json_files/theory/Neon_1mA_Khrapak0405_weak.json",
+    "json_files/theory/Argon_1mA_Schwabe2013.json",
     "json_files/theory/Neon_1mA_Schwabe2013.json"
-    ]
+]
 
 file_path_theory_1p5mA = [
+    "json_files/theory/Argon_1p5mA_Khrapak0405_weak.json",
+    "json_files/theory/Neon_1p5mA_Khrapak0405_weak.json",
     "json_files/theory/Argon_1p5mA_Schwabe2013.json",
     "json_files/theory/Neon_1p5mA_Schwabe2013.json"
-    ]
+]
 
-if current == "1mA": 
-    file_paths_fi = file_path2
+# Corrected logic for current selection
+if current == "1p5mA": 
+    file_paths_fi = [
+        "json_files/exp/Argon_1p5mA_exp.json",
+        "json_files/exp/Neon_1p5mA_exp.json"
+    ]
     file_path_theory = file_path_theory_1p5mA
+else:
+    file_paths_fi = file_path2
 
 # Define fmt_list (adjust markers as needed)
 fmt_list = ['o', 's', 'D', '^', 'v']  # Example markers
-plot_color = "#FFC107"
-if gas_type == "Argon" and current=="1mA": plot_color ="#5DD9C9"
-# "#D81B60", "#5DD9C9", "#FFC107"
+
+# Define colors for theoretical predictions
+color_kinetic = "#FFC107"  # Yellow for F^kin_id
+color_weak = "#5DD9C9"  # Cyan for F^weak_id
+
 p = np.array([15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 120])
 
 plt.figure(dpi=600)
@@ -209,7 +221,7 @@ for file_path in file_paths_fi:
         # Extract current value from filename
         current_value = file_name.split('_')[1].replace('p', '.').replace('mA', ' mA')
 
-        # Plot negative ion-drag force
+        # Plot negative ion-drag force (-)
         plt.errorbar(
             json_data["pos"]["P"], 
             np.abs(np.array(json_data["neg"]["F_i"])) * 10**13, 
@@ -218,7 +230,8 @@ for file_path in file_paths_fi:
             label='$F_{id}$' + f' (-)  {current_value}', 
             linewidth=0.5, markersize=2.5, capsize=2, ecolor='black'
         )
-        # Plot negative ion-drag force
+
+        # Plot negative ion-drag force (+)
         plt.errorbar(
             json_data["pos"]["P"], 
             np.abs(np.array(json_data["pos"]["F_i"])) * 10**13, 
@@ -227,7 +240,8 @@ for file_path in file_paths_fi:
             label='$F_{id}$' + f' (+) {current_value}', 
             linewidth=0.5, markersize=2.5, capsize=2, ecolor='black'
         )
-### THEORY DATA PLOT
+
+### THEORY DATA PLOT ###
 for file_path in file_path_theory:
     file_name = os.path.basename(file_path)  # Extract just the filename
 
@@ -238,17 +252,25 @@ for file_path in file_path_theory:
         # Extract current value from filename
         current_value = current.replace('p', '.').replace('mA', ' mA')
 
-        # Plot negative ion-drag force
+        # Determine color based on theory type
+        if "Khrapak0405_weak" in file_name:
+            theory_label = "$F_{id}^{weak}$"
+            theory_color = color_weak
+        else:  # Schwabe2013 is assumed to be kinetic
+            theory_label = "$F_{id}^{kin}$"
+            theory_color = color_kinetic
+
+        # Plot theoretical negative ion-drag force
         plt.errorbar(
             p, 
             np.abs(np.array(json_data["pos"]["F_i"])) * 10**13, 
             yerr=np.array(json_data["pos"]["F_i_error"]) * 10**13, 
             fmt='none', 
-            label='$F_{id}^{kin}$', 
-            linewidth=0.7, markersize=2.5, capsize=2, ecolor=plot_color
+            label=theory_label, 
+            linewidth=0.7, markersize=2.5, capsize=2, ecolor=theory_color
         )
-        plt.plot(p,np.abs(np.array(json_data["pos"]["F_i"])) * 10**13, linewidth=0.7, linestyle="--", color=plot_color)
-
+        plt.plot(p, np.abs(np.array(json_data["pos"]["F_i"])) * 10**13, 
+                 linewidth=0.7, linestyle="--", color=theory_color)
 
 # Labels, title, and legend
 plt.xlabel('Pressure [Pa]')
@@ -257,8 +279,9 @@ plt.grid(color='gray', linestyle='--', linewidth=0.2)
 plt.legend(loc='upper right')
 plt.title(f"{gas_type}")
 plt.xlim(0, 140)
-plt.ylim(-.2, 1)
+plt.ylim(-.2, 1.2)
 plt.show()
+
 #%%
 
 # =============================================================================
@@ -356,7 +379,7 @@ fig, axes = plt.subplots(3, 1, figsize=(9, 12), dpi=600)
 # Titles and y-labels for each subplot
 parameters = ["n_e0", "T_e", "E_0"]
 titles = [r"$n_{e}$ vs Pressure", r"$T_e$ vs Pressure", r"$E_0$ vs Pressure"]
-y_labels = [r"$n_{e}$ ($\cdot 10 ^{15} \, \mathrm{m^{-3}}$)", r"$T_e$ (eV)", r"$E_0$ ($\mathrm{V/m}$)"]
+y_labels = [r"$n_{e}$ ($\cdot 10 ^{14} \, \mathrm{m^{-3}}$)", r"$T_e$ (eV)", r"$E_0$ ($\mathrm{V/m}$)"]
 
 # Plot each parameter in a separate subplot
 for i, param in enumerate(parameters):
@@ -475,7 +498,7 @@ json_data_textbook_fi = json.load(textbook_fi)
 fig, ax = plt.subplots(dpi=400)
 
 split = "gas-wt"
-gas_type = "Argon"
+gas_type = "Neon"
 polarity = "pos"
 
 file_paths_fi = [
