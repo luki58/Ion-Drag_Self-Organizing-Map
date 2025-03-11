@@ -92,25 +92,25 @@ model = "Schwabe2013"
 # Variable Parameters
 gas_type = "Argon" #or "Neon"
 I = 1  # mA
-polarity = "neg" #pos or neg
+polarity = "pos" #pos or neg
 #
 charge_depletion = 1
 T_e_argon_neon_translation = 0.45
 
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
-    E_multiplier = 1.03
+    E_multiplier = .98
     ne_multiplier = .75
-    Te_multiplier = 1.2
+    Te_multiplier = 1.15
 elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
-    E_multiplier = 1.0
+    E_multiplier = .98
     ne_multiplier = .75
-    Te_multiplier = 1.2
+    Te_multiplier = 1.15
 elif gas_type == "Argon" and I == 1 and polarity == "pos":
-    E_multiplier = 0.98
+    E_multiplier = 0.95
     ne_multiplier = .8
     Te_multiplier = 1.3
 elif gas_type == "Argon" and I == 1 and polarity == "neg":
-    E_multiplier = 0.98
+    E_multiplier = 0.95
     ne_multiplier = .8
     Te_multiplier = 1.3
 elif gas_type == "Neon" and I == 1 and polarity == "neg":
@@ -137,10 +137,12 @@ p = np.array([15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 120])  # Pa
 if gas_type == "Neon":
     #p= [ 15,   20,   25,   30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
     z = [0.3, 0.32, 0.33, 0.34, .33, .3, .3, .3, .3, .3, .3, .3]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al. # Wimmer et al. z = [0.54, 0.43, 0.42, 0.41, 0.32]
-    epstein = [1.44] * len(p)  # Neutral damping Epstein coefficient NEON = 1.44; ARGON = 1.26!
+    epstein = [1.44] * len(p)  # Neutral damping Epstein coefficient, euqal in Neon and Argon
 else:
-    z = [.58, .49, .45, .43, .42, .41, .4, .38, .37, .36, .35, .35]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al.
-    epstein = [1.26] * len(p)  # Neutral damping Epstein coefficient NEON = 1.44; ARGON = 1.26!
+    #z = [.58, .49, .45, .43, .42, .41, .4, .38, .37, .36, .35, .35]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al.
+    #ref_p = [15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
+    z = [ .59, .52, .4, .4, .4, .4, .4, .4, .37, .36, .34, .32] 
+    epstein = [1.44] * len(p)  # Neutral damping Epstein coefficient, equal in Neon and Argon
     
 a = (3.4 / 2) * 10**(-6)  # Micrometer particle radius
 
@@ -321,12 +323,14 @@ if gas_type == "Neon":
     p_error = np.array(results[f"{gas_type}"][I_var]["pressure"])
     factor = np.multiply(epstein, (4 / 3) * np.pi * a**2 * m_neon * v_tn * (p / (T_n * eV_K * k)))
     v_d = (F_e + F_i) / factor
+    z_error = abs(factor*e/((4*np.pi*epsilon_0)*k*a*T_e*eV_K*E_0))
     F_i_error = np.zeros(len(p))
-    # Calculate F_i_error using proper indexing
+    # Calculate F_i_error and z_error using proper indexing
     for i in range(len(p_error)-1):
         position = np.where(p_error[i] == p)[0]  # Get the index of the matching pressure
         if position.size > 0:  # Check if the position array is not empty
-            F_i_error[position] = v_error[i] / 1000 * factor[position]  # Update only if the position exists
+            F_i_error[position] = v_error[i] / 1000 * factor[position]  # Update only if the position exists 
+            z_error[position] = abs(z_error[position] * (v_error[i] / 1000))
         else:
             print("No matching pressure found for Pa in array p")
 else:
@@ -334,14 +338,17 @@ else:
     p_error = np.array(results[f"{gas_type}"][I_var]["pressure"])
     factor = np.multiply(epstein, (4 / 3) * np.pi * a**2 * m_argon * v_tn * (p / (T_n * eV_K * k)))
     v_d = (F_e + F_i) / factor
+    z_error = abs(factor*e/((4*np.pi*epsilon_0)*k*a*T_e_argon*eV_K*E_0_argon))
     F_i_error = np.zeros(len(p))
-    # Calculate F_i_error using proper indexing
+    # Calculate F_i_error and z_error using proper indexing
     for i in range(len(p_error)-1):
         position = np.where(p_error[i] == p)[0]  # Get the index of the matching pressure
         if position.size > 0:  # Check if the position array is not empty
             F_i_error[position] = v_error[i] / 1000 * factor[position]  # Update only if the position exists
+            z_error[position] = abs(z_error[position] * (v_error[i] / 1000))
         else:
             print("No matching pressure found for Pa in array p")
+z_error[z_error > 1] = 0
 
 #%%
 # Define the fitting model: v = c1 * p**(-1) + c2 * p**(-2) + c3 * p**(-3)
@@ -428,8 +435,9 @@ if gas_type == "Neon":
         "p_fit": pressure_range.tolist(),
         "E_0": E_0.tolist(),
         "T_e": T_e.tolist(),
-        "n_e0": n_e0.tolist(),
+        "n_e": n_e0.tolist(),
         "z": z_depl.tolist(),
+        "dz": z_error.tolist(),
         "beta_T": beta_T.tolist(),
         "textbook_graph_F_x": x.tolist(),
         "textbook_graph_F_y": y.tolist(),
@@ -449,8 +457,9 @@ else:
         "p_fit": pressure_range.tolist(),
         "E_0": E_0_argon.tolist(),
         "T_e": T_e_argon.tolist(),
-        "n_e0": n_e0_argon.tolist(),
+        "n_e": n_e0_argon.tolist(),
         "z": z_depl.tolist(),
+        "dz": z_error.tolist(),
         "beta_T": beta_T.tolist(),
         "textbook_graph_F_x": x.tolist(),
         "textbook_graph_F_y": y.tolist(),

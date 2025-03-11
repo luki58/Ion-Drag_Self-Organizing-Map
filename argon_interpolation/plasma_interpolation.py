@@ -154,7 +154,7 @@ data_points_topolot = [[1.58, 1.855, 2.395, 4.10],[2.0, 2.53, 4.38]] #Electric f
 
 # Fit models to the data and evaluate fits for 1mA
 
-current = "2mA"
+current = "1mA"
 
 if current == "1mA":
     x_data = np.array(argon_df["P_Pa"])

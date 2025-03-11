@@ -90,19 +90,19 @@ def e_field(x, I):
 def function_all(gas_type, I, polarity):
     
     if gas_type == "Argon" and I == 1.5 and polarity == "neg":
-        E_multiplier = 1.03
+        E_multiplier = .98
         ne_multiplier = .75
-        T_e_multiplier = 1.3
+        T_e_multiplier = 1.15
     elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
-        E_multiplier = 1.0
+        E_multiplier = .98
         ne_multiplier = .75
-        T_e_multiplier = 1.3
+        T_e_multiplier = 1.15
     elif gas_type == "Argon" and I == 1 and polarity == "pos":
         E_multiplier = 0.95
         ne_multiplier = .8
         T_e_multiplier = 1.3
     elif gas_type == "Argon" and I == 1 and polarity == "neg":
-        E_multiplier = 0.98
+        E_multiplier = 0.95
         ne_multiplier = .8
         T_e_multiplier = 1.3
     elif gas_type == "Neon" and I == 1 and polarity == "neg":
@@ -153,24 +153,25 @@ def function_all(gas_type, I, polarity):
     
     ref_p = [12, 15, 18, 20, 23, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
     z_neon = [0.37, 0.37, 0.37, 0.36, 0.36, 0.35, .34, .295, .27, .27, .27, .27, .27, .27, .32]
-    z_argon = [.56, .56, .56, .48, .45, .43, .43, .43, .43, .4, .4, .37, .37, .35, .35] 
+    #z_neon = [0.3] * len(z_neon)
+    z_argon = [.66, .59, .56, .52, .47, .4, .4, .4, .4, .4, .4, .37, .36, .34, .32] 
     ref_n_d = np.array([0.06, 0.06, 0.06, 0.07, 0.09, 0.1, 0.1, 0.2, 0.3, 0.4, .5, .6, .7, .8, .8]) * 10**11 
 
     if gas_type == "Neon":
         z = []
         for i in p:
             z = np.append(z, z_neon[ref_p.index(i)])
-        epstein = [1.44] * len(p)  # Neutral damping Epstein coefficient NEON = 1.44; ARGON = 1.26!
     else:
         z = []
         for i in p:
             z = np.append(z, z_argon[ref_p.index(i)])
-        epstein = [1.26] * len(p)  # Neutral damping Epstein coefficient NEON = 1.44; ARGON = 1.26!
     
     n_d = []
     for n in p:
         n_d = np.append(n_d, ref_n_d[ref_p.index(n)])
+        
     a = (3.4 / 2) * 10**(-6)  # Micrometer particle radius
+    epstein = [1.44] * len(p)  # Neutral damping Epstein coefficient, equal in Neon and Argon.
         
     # Extract the data for the selected current
     try:
@@ -279,6 +280,7 @@ def function_all(gas_type, I, polarity):
         y = F_i/graph_value
         y_error = F_i_error/graph_value
         x = (u_i/v_ti) 
+        z_error = abs(factor*e/((4*np.pi*epsilon_0)*k*a*T_e*eV_K*E_0))*(exp_error/1000)
     else:
         F_e = Z_d * e * E_0_argon
         factor = np.multiply(epstein, (4 / 3) * np.pi * a**2 * m_argon * v_tn * (p / (T_n * eV_K * k)))
@@ -288,6 +290,7 @@ def function_all(gas_type, I, polarity):
         y = F_i/graph_value
         y_error = F_i_error/graph_value
         x = (u_i/v_ti)
+        z_error = abs(factor*e/((4*np.pi*epsilon_0)*k*a*T_e_argon*eV_K*E_0_argon))*(exp_error/1000)
     
     # EXP Data save
     # Prepare the data to be stored in the JSON file
@@ -302,7 +305,9 @@ def function_all(gas_type, I, polarity):
             "textbook_y_error": y_error.tolist(),
             "F_n/F_e": (abs(factor*exp_data/1000)/F_e).tolist(),
             "F_n/F_i": (abs(factor*exp_data/1000)/F_i).tolist(),
-            "F_e/F_i": (abs(F_e)/F_i).tolist()
+            "F_e/F_i": (abs(F_e)/F_i).tolist(),
+            "z": z_depl.tolist(),
+            "dz": z_error.tolist(),
         }
     }
     
