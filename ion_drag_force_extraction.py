@@ -90,13 +90,13 @@ def e_field(x, I):
 def function_all(gas_type, I, polarity):
     
     if gas_type == "Argon" and I == 1.5 and polarity == "neg":
-        E_multiplier = .98
-        ne_multiplier = .75
-        T_e_multiplier = 1.15
+        E_multiplier = 1.
+        ne_multiplier = .6
+        T_e_multiplier = 1.1
     elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
-        E_multiplier = .98
-        ne_multiplier = .75
-        T_e_multiplier = 1.15
+        E_multiplier = .8
+        ne_multiplier = .6
+        T_e_multiplier = 1.1
     elif gas_type == "Argon" and I == 1 and polarity == "pos":
         E_multiplier = 0.95
         ne_multiplier = .8
@@ -105,20 +105,20 @@ def function_all(gas_type, I, polarity):
         E_multiplier = 0.95
         ne_multiplier = .8
         T_e_multiplier = 1.3
-    elif gas_type == "Neon" and I == 1 and polarity == "neg":
-        E_multiplier = 1
-        ne_multiplier = .8
-        T_e_multiplier = 1
     elif gas_type == "Neon" and I == 1 and polarity == "pos":
-        E_multiplier = .95
-        ne_multiplier = .8
+        E_multiplier = .9
+        ne_multiplier = 1
+        T_e_multiplier = .85
+    elif gas_type == "Neon" and I == 1 and polarity == "neg":
+        E_multiplier = 1.2
+        ne_multiplier = 1
         T_e_multiplier = 1
-    elif gas_type == "Neon" and I == 1.5 and polarity == "neg":
-        E_multiplier = 1.14
+    elif gas_type == "Neon" and I == 1.5 and polarity == "pos":
+        E_multiplier = 1.1
         ne_multiplier = .7
         T_e_multiplier = .8
     else:
-        E_multiplier = 1.2
+        E_multiplier = 1.1
         ne_multiplier = .7
         T_e_multiplier = 0.8
         
@@ -151,9 +151,10 @@ def function_all(gas_type, I, polarity):
     exp_data = np.array(sorted_exp_data)
     exp_error = np.array(sorted_exp_error)
     
-    ref_p = [12, 15, 18, 20, 23, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
-    z_neon = [0.37, 0.37, 0.37, 0.36, 0.36, 0.35, .34, .295, .27, .27, .27, .27, .27, .27, .32]
+    ref_p = [12,    15,    18,   20,   23,   30,   40,   50,  60,  70,  80,  90, 100, 110, 120]
+    z_neon = [0.37, 0.37, 0.37, 0.36, 0.36, 0.33, .31, .29, .26, .26, .26, .26, .26, .26, .3]
     #z_neon = [0.3] * len(z_neon)
+    # ref_p = [12,   15, 18,   20,  23, 30, 40, 50, 60, 70, 80,  90, 100, 110, 120]
     z_argon = [.66, .59, .56, .52, .47, .4, .4, .4, .4, .4, .4, .37, .36, .34, .32] 
     ref_n_d = np.array([0.06, 0.06, 0.06, 0.07, 0.09, 0.1, 0.1, 0.2, 0.3, 0.4, .5, .6, .7, .8, .8]) * 10**11 
 
@@ -194,10 +195,10 @@ def function_all(gas_type, I, polarity):
     T_n = 0.025  # eV
     if gas_type == "Neon":
         l_i = np.divide(T_n  * eV_K * k, p * sigma_neon)
-        T_i = (np.multiply(2 / 9 * np.abs(np.multiply(E_0, 1)) * e / k, l_i) + 0.03 * eV_K)
+        T_i = (np.multiply(2 / 9 * np.abs(np.multiply(E_0, 1)) * e / k, l_i) + 0.025 * eV_K)
     else:
         l_i = np.divide(T_n  * eV_K * k, p * sigma_argon)
-        T_i = (np.multiply(2 / 9 * np.abs(np.multiply(E_0_argon, 1)) * e / k, l_i) + 0.03 * eV_K)
+        T_i = (np.multiply(2 / 9 * np.abs(np.multiply(E_0_argon, 1)) * e / k, l_i) + 0.025 * eV_K)
     n_0 = p / (k * T_n * eV_K) * 10**(-6)  # cm^-3
     
     # Other Equations

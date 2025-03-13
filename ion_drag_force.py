@@ -95,42 +95,43 @@ theory = 1
 gas_type = "Argon" #or "Neon"
 I = 1 # mA
 polarity = "pos" #pos or neg
+display_plots = False
 
 charge_depletion = 1
 T_e_argon_neon_translation = 0.45
 
 if gas_type == "Argon" and I == 1.5 and polarity == "neg":
-    E_multiplier = .98
-    ne_multiplier = .75
-    Te_multiplier = 1.15
+    E_multiplier = 1.
+    ne_multiplier = .6
+    Te_multiplier = 1.1
 elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
-    E_multiplier = .98
-    ne_multiplier = .75
-    Te_multiplier = 1.15
-elif gas_type == "Argon" and I == 1 and polarity == "pos":
-    E_multiplier = 0.95
-    ne_multiplier = .8
-    Te_multiplier = 1.3
+    E_multiplier = .8
+    ne_multiplier = .6
+    Te_multiplier = 1.1
 elif gas_type == "Argon" and I == 1 and polarity == "neg":
     E_multiplier = 0.95
     ne_multiplier = .8
     Te_multiplier = 1.3
+elif gas_type == "Argon" and I == 1 and polarity == "pos":
+    E_multiplier = 0.95
+    ne_multiplier = .8
+    Te_multiplier = 1.3
+elif gas_type == "Neon" and I == 1 and polarity == "pos":
+    E_multiplier = .9
+    ne_multiplier = 1
+    Te_multiplier = .85
 elif gas_type == "Neon" and I == 1 and polarity == "neg":
     E_multiplier = 1.2
-    ne_multiplier = .8
-    Te_multiplier = .8
-elif gas_type == "Neon" and I == 1 and polarity == "pos":
-    E_multiplier = 1.14
-    ne_multiplier = .8
-    Te_multiplier = .8
-elif gas_type == "Neon" and I == 1.5 and polarity == "neg":
-    E_multiplier = 1.14
+    ne_multiplier = 1
+    Te_multiplier = 1
+elif gas_type == "Neon" and I == 1.5 and polarity == "pos":
+    E_multiplier = 1.
     ne_multiplier = .7
-    Te_multiplier = .8
+    Te_multiplier = 1
 else:
-    E_multiplier = 1.2
+    E_multiplier = 1.3
     ne_multiplier = .7
-    Te_multiplier = .8
+    Te_multiplier = 1
     
 selected_current = str(I)+"mA"
 #
@@ -138,12 +139,11 @@ p = np.array([15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 120])  # Pa
 
 if gas_type == "Neon":
     if theory == 2:
-        #p= [15,  20,   25,  30,  40, 50,  60, 70,  80,  90,  100, 120] # Pa
-        #z = [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, .3, .3, .3, .3, .3, .3, .3, .3, .3]
-        z = [0.3, 0.32, 0.33, 0.34, .33, .3, .3, .3, .3, .3, .3, .3]  # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al. # Wimmer et al. z = [0.54, 0.43, 0.42, 0.41, 0.32]
+        #p = [15,   20,   25,   30,   40,   50,  60,  70,  80,  90, 100, 120]
+        z = [0.37, 0.36, 0.36, 0.33, .31, .29, .26, .26, .26, .26, .26, .3] # Charge potential adjsutable 0.3 +- 0.1 NEON, 0.4 +-1 ARGON; Antonova et. al. # Wimmer et al. z = [0.54, 0.43, 0.42, 0.41, 0.32]
     else:
-        #z = [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, .3, .3, .3, .3, .3, .3, .3, .3, .3]
-        z = [0.3, 0.32, 0.33, 0.34, .33, .3, .3, .3, .3, .3, .3, .3]
+        #p = [15,   20,   25,   30,   40,   50,  60,  70,  80,  90, 100, 120]
+        z = [0.37, 0.36, 0.36, 0.33, .31, .29, .26, .26, .26, .26, .26, .3]
     epstein = [1.44] * len(p)  # Neutral damping Epstein coefficient, equal in Neon and Argon.
 else:
     if theory == 2:
@@ -188,10 +188,10 @@ T_n = 0.025  # eV
 if gas_type == "Neon":
     l_i = np.divide(T_n  * eV_K * k, p * sigma_neon)
     arr = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    T_i = (np.multiply(2 / 9 * np.abs(np.multiply(E_0, arr)) * e / k, l_i) + 0.03 * eV_K)
+    T_i = (np.multiply(2 / 9 * np.abs(np.multiply(E_0, arr)) * e / k, l_i) + 0.025 * eV_K)
 else:
     l_i = np.divide(T_n  * eV_K * k, p * sigma_argon)
-    T_i = (np.multiply(2 / 9 * np.abs(np.multiply(E_0_argon, 1)) * e / k, l_i) + 0.03 * eV_K)
+    T_i = (np.multiply(2 / 9 * np.abs(np.multiply(E_0_argon, 1)) * e / k, l_i) + 0.025 * eV_K)
 n_0 = p / (k * T_n * eV_K) * 10**(-6)  # cm^-3
 m_d = 4 / 3 * np.pi * a**3 * 1574  # Dust mass
 
@@ -324,12 +324,12 @@ integrated_f = np.array([
     for i in range(len(p))
 ])
 
-
-fig, ax = plt.subplots(dpi=150)
-plt.plot(p, (integrated_f), color='red')
-ax.grid(color='grey', linestyle='--', linewidth=0.4, alpha=0.7)
-plt.tight_layout()
-plt.show()
+if display_plots == True:
+    fig, ax = plt.subplots(dpi=150)
+    plt.plot(p, (integrated_f), color='red')
+    ax.grid(color='grey', linestyle='--', linewidth=0.4, alpha=0.7)
+    plt.tight_layout()
+    plt.show()
 
 if I == 1.5:
     I_var = "1p5mA"
@@ -388,6 +388,8 @@ else:
         else:
             print("No matching pressure found for Pa in array p")
 z_error[z_error > 1] = 0
+dZ_d_error = (Z_d/z)*z_error
+beta_T_error = (beta_T / Z_d) * dZ_d_error
 #%%
 # Define the fitting model: v = c1 * p**(-1) + c2 * p**(-2) + c3 * p**(-3)
 def inverse_power_model(p, c0, c1, c2, c3):
@@ -409,55 +411,58 @@ else:
     pressure_range = np.linspace(19, 120, 500)  # Start from 0.1 to avoid division by zero
 fit = inverse_power_model(pressure_range, *popt)
 
-# Plot the results
-fig, ax = plt.subplots(dpi=600)
-fig.set_size_inches(6, 3)
-plt.title(f"Fit Theory: {gas_type} {I} mA " + polarity, fontsize=10)
-plt.xlabel('Pressure [Pa]', fontsize=9)
-plt.ylabel('$v_{mean}$ [mm/s]', fontsize=9)
-plt.plot(pressure_range, fit, 'g--', label=f'Fit: $c_0 + c_1/p + c_2/p^2 + c_3/p^3$', linewidth=0.8)
-plt.scatter(p, (v_d * -1000), color='blue', marker='o', label='Data', s=10)
-ax.legend(fontsize=8)
-ax.grid(color='grey', linestyle='--', linewidth=0.4, alpha=0.7)
-plt.xlim(10, 130)
-plt.ylim(-10,60)# * .6, np.max(np.abs(v_d * -1000)) * 1.2)
-plt.tight_layout()
-plt.show()
+if display_plots == True:
+    # Plot the results
+    fig, ax = plt.subplots(dpi=600)
+    fig.set_size_inches(6, 3)
+    plt.title(f"Fit Theory: {gas_type} {I} mA " + polarity, fontsize=10)
+    plt.xlabel('Pressure [Pa]', fontsize=9)
+    plt.ylabel('$v_{mean}$ [mm/s]', fontsize=9)
+    plt.plot(pressure_range, fit, 'g--', label=f'Fit: $c_0 + c_1/p + c_2/p^2 + c_3/p^3$', linewidth=0.8)
+    plt.scatter(p, (v_d * -1000), color='blue', marker='o', label='Data', s=10)
+    ax.legend(fontsize=8)
+    ax.grid(color='grey', linestyle='--', linewidth=0.4, alpha=0.7)
+    plt.xlim(10, 130)
+    plt.ylim(-10,60)# * .6, np.max(np.abs(v_d * -1000)) * 1.2)
+    plt.tight_layout()
+    plt.show()
 
 # Display fitted parameters
 print(f"Fitted coefficients: c0={c0:.3f}, c1={c1:.3f}, c2={c2:.3f}, c3={c3:.3f}")
 
-# Plotting Force 
-fig, ax = plt.subplots(dpi=600)
-fig.set_size_inches(6, 3)
-ax.plot(p, np.abs(F_e) * 10**14, linestyle='solid', marker='^', color='#00429d', linewidth=.75)
-ax.plot(p, F_i * 10**14, linestyle='solid', marker='x', color='#00cc00', linewidth=.75)
-ax.legend(['$F_e x 10^{-14}$', '$F_i x 10^{-14}$'])
-ax.grid(color='grey', linestyle='--', linewidth=0.4, alpha=0.5)
-plt.title(gas_type + " " + str(I) + "mA " + polarity)
-plt.show()
+if display_plots == True:
+    # Plotting Force 
+    fig, ax = plt.subplots(dpi=600)
+    fig.set_size_inches(6, 3)
+    ax.plot(p, np.abs(F_e) * 10**14, linestyle='solid', marker='^', color='#00429d', linewidth=.75)
+    ax.plot(p, F_i * 10**14, linestyle='solid', marker='x', color='#00cc00', linewidth=.75)
+    ax.legend(['$F_e x 10^{-14}$', '$F_i x 10^{-14}$'])
+    ax.grid(color='grey', linestyle='--', linewidth=0.4, alpha=0.5)
+    plt.title(gas_type + " " + str(I) + "mA " + polarity)
+    plt.show()
 
-# Plotting Force/faktor 
-fig, ax = plt.subplots(dpi=300)
-fig.set_size_inches(6, 3)
 if gas_type == "Neon":
     t_var = np.pi*a**2*n_i0*m_neon*v_ti**2
     x = (u_i/v_ti)
     y = (F_i/(t_var))
-    ax.plot(x, y, linestyle='solid', marker='x', color='#00cc00', linewidth=.75)
 else:
     t_var = np.pi*a**2*n_i0*m_argon*v_ti**2
     x = (u_i/v_ti) 
     y = (F_i/(t_var))
+
+if display_plots == True:
+    # Plotting Force/faktor 
+    fig, ax = plt.subplots(dpi=300)
+    fig.set_size_inches(6, 3)
     ax.plot(x, y, linestyle='solid', marker='x', color='#00cc00', linewidth=.75)
-ax.set_yscale('log')
-ax.set_xscale('log')
-ax.legend(['$F_i/c*u_i$'])
-plt.xlabel('$u_i / v_{ti}$', fontsize=9)
-plt.ylabel('$F_i / \pi a^2 n_i m_i v_{ti}^2$', fontsize=9)
-ax.grid(color='grey', linestyle='--', linewidth=0.4, alpha=0.5)
-plt.title(gas_type + " " + str(I) + "mA " + polarity + " Khrapak 2004&2005")
-plt.show()
+    ax.set_yscale('log')
+    ax.set_xscale('log')
+    ax.legend(['$F_i/c*u_i$'])
+    plt.xlabel('$u_i / v_{ti}$', fontsize=9)
+    plt.ylabel('$F_i / \pi a^2 n_i m_i v_{ti}^2$', fontsize=9)
+    ax.grid(color='grey', linestyle='--', linewidth=0.4, alpha=0.5)
+    plt.title(gas_type + " " + str(I) + "mA " + polarity + " Khrapak 2004&2005")
+    plt.show()
 
 # Prepare the data to be stored in the JSON file
 if gas_type == "Neon":
@@ -475,7 +480,9 @@ if gas_type == "Neon":
         "n_e": n_e0.tolist(),
         "z": z_depl.tolist(),
         "dz": z_error.tolist(),
+        "dZ_d": dZ_d_error.tolist(),
         "beta_T": beta_T.tolist(),
+        "beta_T_error": beta_T_error.tolist(),
         "textbook_graph_F_x": x.tolist(),
         "textbook_graph_F_y": y.tolist(),
         "textbook_var": t_var.tolist(),
@@ -497,7 +504,9 @@ else:
         "n_e": n_e0_argon.tolist(),
         "z": z_depl.tolist(),
         "dz": z_error.tolist(),
+        "dZ_d": dZ_d_error.tolist(),
         "beta_T": beta_T.tolist(),
+        "beta_T_error": beta_T_error.tolist(),
         "textbook_graph_F_x": x.tolist(),
         "textbook_graph_F_y": y.tolist(),
         "textbook_var": t_var.tolist(),

@@ -1,0 +1,8 @@
+if gas_type == "Argon" and I == 1.5 and polarity == "pos":
+    E_multiplier = .78
+    ne_multiplier = .6
+    Te_multiplier = 1.3
+if gas_type == "Argon" and I == 1.5 and polarity == "neg":
+    E_multiplier = .6
+    ne_multiplier = .58
+    Te_multiplier = 1.3

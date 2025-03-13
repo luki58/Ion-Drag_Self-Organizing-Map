@@ -14,8 +14,10 @@ from collections import defaultdict
 
 #%% v mean plots
 
-gastype = "Argon" #Argon
+gastype = "Neon" #Argon
 current = "1mA"  #1p5mA
+
+off_plot = False
 
 json_folder = f"json_files/{gastype}/{current}"
         
@@ -116,22 +118,23 @@ fit_neg = inverse_power_model(pressure_range, *popt_neg)
 print("Polynomials (POS): c0 = " + str(c0_pos) + ", c1 = " + str(c1_pos) + ", c2 = "+ str(c2_pos) + ", c3 = " + str(c3_pos))
 print("Polynomials (NEG): c0 = " + str(c0_neg) + ", c1 = " + str(c1_neg) + ", c2 = "+ str(c2_neg) + ", c3 = " + str(c3_pos))
 #
-# Plotting the results + FIT
-plt.figure(dpi=150)
-plt.errorbar(pressure_neg, v_mean_neg, yerr=v_error_neg, fmt='d', color='r', linewidth=1, markersize=3, capsize=2, mfc='w', ecolor='#004D40', label='Negative Polarity')
-plt.errorbar(pressure_pos, v_mean_pos, yerr=v_error_pos, fmt='o', color='r', linewidth=1, markersize=3, capsize=2, mfc='w', ecolor='#1E88E5', label='Positive Polarity')
-# Plot the nonlinear fit lines
-plt.plot(pressure_range, fit_neg, '--', color="#004D40", label='Negative Fit', linewidth=.7)
-plt.plot(pressure_range, fit_pos, '--', color="#1E88E5", label='Positive Fit', linewidth=.7)
-# Labels, title, and legend
-plt.xlabel('Pressure [Pa]')
-plt.ylabel('$v_{mean}$ [mm/s]')
-plt.grid(color='gray', linestyle='-', linewidth=0.2)
-plt.title(str(json_folder.split('/')[1]) + ' ' + str(json_folder.split('/')[2]) + " Experimental Fit")
-plt.legend(loc='upper right')
-plt.xlim(0, 150)
-#plt.ylim(0, 40)
-plt.show()
+if off_plot == True:
+    # Plotting the results + FIT
+    plt.figure(dpi=150)
+    plt.errorbar(pressure_neg, v_mean_neg, yerr=v_error_neg, fmt='d', color='r', linewidth=1, markersize=3, capsize=2, mfc='w', ecolor='#004D40', label='Negative Polarity')
+    plt.errorbar(pressure_pos, v_mean_pos, yerr=v_error_pos, fmt='o', color='r', linewidth=1, markersize=3, capsize=2, mfc='w', ecolor='#1E88E5', label='Positive Polarity')
+    # Plot the nonlinear fit lines
+    plt.plot(pressure_range, fit_neg, '--', color="#004D40", label='Negative Fit', linewidth=.7)
+    plt.plot(pressure_range, fit_pos, '--', color="#1E88E5", label='Positive Fit', linewidth=.7)
+    # Labels, title, and legend
+    plt.xlabel('Pressure [Pa]')
+    plt.ylabel('$v_{mean}$ [mm/s]')
+    plt.grid(color='gray', linestyle='-', linewidth=0.2)
+    plt.title(str(json_folder.split('/')[1]) + ' ' + str(json_folder.split('/')[2]) + " Experimental Fit")
+    plt.legend(loc='upper right')
+    plt.xlim(0, 150)
+    #plt.ylim(0, 40)
+    plt.show()
 
 # Plotting the results + Theory FIT
 plt.figure(dpi=400)
@@ -144,10 +147,12 @@ else:
 # Plot the nonlinear fit lines
 #plt.plot(theory_data_strong["pos"]["p_fit"], theory_data_strong["pos"]["v_d_fit"], '--', color='#D81B60', label='$F_{id}^{strong}$', linewidth=.7)
 #plt.plot(theory_data_strong["neg"]["p_fit"], theory_data_strong["neg"]["v_d_fit"], '-.', color='#D81B60', label='Krapak Model $F_i^{strong}$ (-)', linewidth=.7)
-plt.plot(theory_data_weak["pos"]["p_fit"], theory_data_weak["pos"]["v_d_fit"], '--', color='#5DD9C9', label='$F_{id}^{weak,int}$', linewidth=.7)
+plt.plot(theory_data_weak["neg"]["p_fit"], theory_data_weak["neg"]["v_d_fit"], '--', color='#5DD9C9', label='$F_{id}^{weak,int}$', linewidth=.7)
+#plt.plot(theory_data_weak["pos"]["p_fit"], theory_data_weak["pos"]["v_d_fit"], '-', color='r', label='$F_{id}^{weak,int}$', linewidth=.7)
+
 #plt.plot(theory_data_weak["neg"]["p_fit"], theory_data_weak["neg"]["v_d_fit"], '-.', color='#5DD9C9', label='Krapak Model $F_i^{weak}$ (-)', linewidth=.7)
-plt.plot(theory_schwabe2013["pos"]["p_fit"], theory_schwabe2013["pos"]["v_d_fit"], '--', color='#FFC107', label='$F_{id}^{hybrid}$', linewidth=.7)
-#plt.plot(theory_schwabe2013["neg"]["p_fit"], theory_schwabe2013["neg"]["v_d_fit"], '-.', color='#FFC107', label='Schwabe Model (-)', linewidth=.7)
+plt.plot(theory_schwabe2013["neg"]["p_fit"], theory_schwabe2013["neg"]["v_d_fit"], '--', color='#FFC107', label='$F_{id}^{hybrid}$', linewidth=.7)
+#plt.plot(theory_schwabe2013["pos"]["p_fit"], theory_schwabe2013["pos"]["v_d_fit"], '-', color='r', label='$F_{id}^{hybrid}$', linewidth=.7)
 # Labels, title, and legend
 plt.xlabel('Pressure [Pa]')
 plt.ylabel('$v_{mean}$ [mm/s]')
@@ -158,14 +163,14 @@ plt.xlim(0, 150)
 plt.ylim(0, 70)
 plt.show()
 
-#%%
+#%% F_i exp
 
 # =============================================================================
 # F_i measured
 # =============================================================================
 
 gas_type = "Argon"
-current = "1p5mA"
+current = "1mA"
 
 file_paths_fi = [
     "json_files/exp/Argon_1p5mA_exp.json",
@@ -283,7 +288,7 @@ plt.xlim(0, 140)
 plt.ylim(-.15, 1.4)
 plt.show()
 
-#%%
+#%% z
 
 # =============================================================================
 # z
@@ -344,7 +349,16 @@ plt.legend(loc='upper right')
 plt.xlim(0, 130)
 plt.ylim(0.1, .8)
 plt.show()
-#%%
+
+#store
+# Convert defaultdict to a normal dict for JSON serialization
+processed_data_serializable = {gas: [{"P": P, "z": z, "dz": dz} for P, z, dz in processed_data[gas]] for gas in processed_data}
+
+# Save the data to a JSON file
+with open("json_files/exp/charge.json", "w") as f:
+    json.dump(processed_data_serializable, f, indent=4)
+    
+#%% DCP
 
 # =============================================================================
 # Discharge Parameters
@@ -466,18 +480,16 @@ for i, param in enumerate(parameters):
 
 plt.tight_layout()
 plt.show()
-#%%
+#%% \beta
 
 # =============================================================================
 # Scattering parameter \beta
 # =============================================================================
 
-# Plotting scattering parameter \beta_T
 plt.figure(figsize=(7, 4), dpi=300)
-#path = json_folder.split('/')[0] + "/theory/"
-# Corrected path building and filtering logic
 
-gas_type = "Neon"
+gas_type = "Argon"
+polarity = "pos"
 
 file_paths = [
     os.path.join(json_folder.split('/')[0] + "/theory/", filename)
@@ -487,9 +499,11 @@ file_paths = [
        and filename.startswith(gas_type)  # Includes only files that start with 'Neon'
 ]
 
-print(file_paths)
+#error 
+for gas in processed_data:
+    P_vals, z_vals, dz_vals = zip(*processed_data[gas])
+    #P_vals, z_vals, dz_vals
 
-#color_list = ["#D81B60", "#5DD9C9", "#FFC107", "#D81B60", "#5DD9C9", "#FFC107","#D81B60", "#5DD9C9", "#FFC107", "#D81B60", "#5DD9C9", "#FFC107"]
 color_list = ["#D81B60", "#5DD9C9", "#D81B60", "#5DD9C9", "#5DD9C9", "#FFC107","#D81B60", "#5DD9C9", "#FFC107", "#D81B60", "#5DD9C9", "#FFC107"]
 marker_list = ["s", "^", "d", "o", "s", "^", "d", "o","s", "^", "d", "o", "s", "^", "d", "o"]
 i=0
@@ -502,7 +516,7 @@ for file in file_paths:
             label_text = r"$\beta_T^{weak,int}$ (1.5 mA)"
         else:
             label_text = r"$\beta_T^{hybrid} \,\,\,\,\,\,$ (1.5 mA)"
-        plt.errorbar(pressures, np.array(json_data["pos"]["beta_T"]), yerr=np.array(json_data["pos"]["beta_T"])*0.1, fmt="^", color=color_list[i], linewidth=.7, markersize=4, capsize=2, ecolor='black', mfc='w', label=label_text)
+        plt.errorbar(pressures, np.array(json_data[polarity]["beta_T"]), yerr=np.array(json_data[polarity]["beta_T_error"]), fmt="^", color=color_list[i], linewidth=.7, markersize=4, capsize=2, ecolor='black', mfc='w', label=label_text)
         #plt.errorbar(pressures, np.array(json_data["neg"]["beta_T"]), yerr=np.array(json_data["neg"]["beta_T"])*0.05, fmt=marker_list[i], color=color_list[i], label=r'$\beta_T$ ' + file.split('/')[2].split('_')[0].split('.')[0] + ' pos & neg', linewidth=.7, markersize=4, capsize=2, ecolor='black', mfc='w')
         i+=1
     elif file.split('/')[2].split('_')[0] == gas_type and file.split('/')[2].split('_')[1] == '1mA':
@@ -510,7 +524,7 @@ for file in file_paths:
             label_text = r"$\beta_T^{weak,int}$ (1 mA)"
         else:
             label_text = r"$\beta_T^{hybrid} \,\,\,\,\,\,$ (1 mA)"
-        plt.errorbar(pressures, np.array(json_data["pos"]["beta_T"]), yerr=np.array(json_data["pos"]["beta_T"])*0.1, fmt="x", color=color_list[i], linewidth=.7, markersize=4, capsize=2, ecolor='black', label=label_text)#, mfc='w')
+        plt.errorbar(pressures, np.array(json_data[polarity]["beta_T"]), yerr=np.array(json_data[polarity]["beta_T_error"]), fmt="x", color=color_list[i], linewidth=.7, markersize=4, capsize=2, ecolor='black', label=label_text)#, mfc='w')
         #plt.errorbar(pressures, np.array(json_data["neg"]["beta_T"]), yerr=np.array(json_data["neg"]["beta_T"])*0.05, fmt=marker_list[i], color=color_list[i], label=r'$\beta_T$ ' + file.split('/')[2].split('_')[0].split('.')[0] + ' pos & neg', linewidth=.7, markersize=4, capsize=2, ecolor='black', mfc='w')
         i+=1
 
@@ -519,10 +533,10 @@ plt.xlabel('Pressure [Pa]')
 plt.ylabel(r'Scattering Parameter $\beta_T$')
 plt.grid(color='gray', linestyle='--', linewidth=0.2)
 plt.legend(loc='upper right')
-plt.title(gas_type)
+#plt.title(gas_type)
 plt.ylim( 0 , 2.8)
 plt.show()
-#%%
+#%% log(F_i)
 
 # =============================================================================
 # Comparison F_i [log_scale]
@@ -536,7 +550,7 @@ fig, ax = plt.subplots(dpi=400)
 
 split = "gas-wt"
 gas_type = "Argon"
-polarity = "neg"
+polarity = "pos"
 
 file_paths_fi = [
     "json_files/exp/Argon_1mA_exp.json",
@@ -623,7 +637,7 @@ handles, labels = plt.gca().get_legend_handles_labels()
 # Display legend with only the first three entries
 plt.legend(handles, label_list, loc='upper right')
 
-plt.title("Model Comparison " + gas_type)
+#plt.title("Model Comparison " + gas_type)
 
 # Displaying the plot
 plt.show()
