@@ -1,0 +1,72 @@
+from graphviz import Digraph
+
+def create_final_optimization_network():
+    dot = Digraph(comment="Final Optimization Network", format='png')
+    dot.attr(rankdir='TB')  # Top to bottom layout
+
+    # Input parameters
+    inputs = ['gas_type', 'I (Current)', 'polarity', 'E_multiplier', 'ne_multiplier', 'Te_multiplier', 'z_multiplier']
+    for inp in inputs:
+        dot.node(inp, inp, shape='note', style='filled', fillcolor='lightgrey')
+
+    # Models
+    models = {
+        'model_khrapak': 'Khrapak Model',
+        'model_schwabe': 'Hybrid Model',
+        'solve_fb_equation': 'Force Balance Equation'
+    }
+    for key, label in models.items():
+        dot.node(key, label, shape='box', style='filled', fillcolor='lightyellow')
+
+    # Experimental Data Node
+    dot.node('experimental_data', 'Experimental Data', shape='folder', style='filled', fillcolor='lightcyan')
+
+    # Error computation blocks
+    errors = {
+        'error_khrapak': 'Khrapak Model Error',
+        'error_schwabe': 'Hybrid Model Error'
+    }
+    for key, label in errors.items():
+        dot.node(key, label, shape='box', style='filled', fillcolor='mistyrose')
+
+    # Objective
+    dot.node('Objective Function', 'Sum of Errors', shape='box', style='filled', fillcolor='lightblue')
+
+    # Optimizer
+    dot.node('Bayesian Optimizer', 'Bayesian Optimization', shape='ellipse', style='filled', fillcolor='palegreen')
+
+    # Edges from inputs to models
+    for model in models:
+        for inp in inputs:
+            dot.edge(inp, model)
+
+    # Experimental data feeds into models and error calculation
+    for model in models:
+        dot.edge('experimental_data', model)
+    dot.edge('experimental_data', 'error_khrapak')
+    dot.edge('experimental_data', 'error_schwabe')
+
+    # Model-to-error edges
+    dot.edge('model_khrapak', 'error_khrapak')
+    dot.edge('model_schwabe', 'error_schwabe')
+
+    # Force balance contributes to both errors
+    dot.edge('solve_fb_equation', 'error_khrapak', style='dashed', label='contributes')
+    dot.edge('solve_fb_equation', 'error_schwabe', style='dashed', label='contributes')
+
+    # Errors to objective
+    dot.edge('error_khrapak', 'Objective Function')
+    dot.edge('error_schwabe', 'Objective Function')
+
+    # Optimizer loop
+    dot.edge('Objective Function', 'Bayesian Optimizer')
+    dot.edge('Bayesian Optimizer', 'E_multiplier')
+    dot.edge('Bayesian Optimizer', 'ne_multiplier')
+    dot.edge('Bayesian Optimizer', 'Te_multiplier')
+    dot.edge('Bayesian Optimizer', 'z_multiplier')
+
+    output_path = "/mnt/data/final_ion_drag_optimization_network"
+    dot.render(output_path, view=False)
+    return output_path + ".png"
+
+create_final_optimization_network()

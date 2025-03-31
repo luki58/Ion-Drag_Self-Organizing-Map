@@ -1,0 +1,114 @@
+from graphviz import Digraph
+
+def create_schwabe_ion_drag_graph():
+    dot = Digraph(comment="Ion Drag Force (Schwabe Model)", format='png')
+    dot.attr(rankdir='TB')  # Top to bottom layout
+
+    # Inputs
+    inputs = [
+        'p (Pressure)', 'gas_type', 'I (Current)',
+        'E_multiplier', 'ne_multiplier', 'Te_multiplier', 'z_multiplier',
+        'T_n', 'a', 'm_neon', 'm_argon', 'n_d'
+    ]
+    for inp in inputs:
+        dot.node(inp, inp, shape='note', style='filled', fillcolor='lightgrey')
+
+    # Core variables
+    model_vars = {
+        'E_0': 'Electric Field (E₀)',
+        'T_e': 'Electron Temperature (Tₑ)',
+        'n_e0': 'Electron Density (nₑ₀)',
+        'T_i': 'Ion Temperature (Tᵢ)',
+        'v_ti': 'Ion Thermal Speed (vₜᵢ)',
+        'Z_d': 'Dust Charge (Z_d)',
+        'n_i0': 'Ion Density (nᵢ₀)',
+        'debye_De': 'Electron Debye Length (λ_De)',
+        'debye_Di': 'Ion Debye Length (λ_Di)',
+        'debye_D': 'Total Debye Length (λ_D)',
+        'roh_0': 'Interaction Radius (ρ₀)',
+        'debye_nue': 'Debye nue',
+        'roh_0_nue': 'ρ₀(nue)',
+        'coulomb_logarithm': 'Coulomb Logarithm',
+        'K': 'Khrapak Integral (K)',
+        'u_i': 'Ion Drift Speed (uᵢ)',
+        'sigma_scatter': 'Scatter Cross-section (σ)',
+        'F_i': 'Ion Drag Force (Fᵢ)',
+        'F_e': 'Electric Force (Fₑ)'
+    }
+
+    for key, label in model_vars.items():
+        color = 'lightblue' if key == 'F_i' else 'lightyellow'
+        dot.node(key, label, shape='box', style='filled', fillcolor=color)
+
+    # Multiplier connections
+    multipliers = {
+        'E_multiplier': 'E_0',
+        'ne_multiplier': 'n_e0',
+        'Te_multiplier': 'T_e',
+        'z_multiplier': 'Z_d'
+    }
+
+    for m, v in multipliers.items():
+        dot.edge(m, v)
+
+    # Logical edges (Schwabe model flow)
+    edges = [
+        ('p (Pressure)', 'E_0'),
+        ('p (Pressure)', 'T_e'),
+        ('p (Pressure)', 'n_e0'),
+        ('gas_type', 'm_neon'),
+        ('gas_type', 'm_argon'),
+        ('gas_type', 'Z_d'),
+        ('I (Current)', 'E_0'),
+        ('I (Current)', 'T_e'),
+        ('I (Current)', 'T_i'),
+        ('T_e', 'Z_d'),
+        ('n_e0', 'n_i0'),
+        ('Z_d', 'n_i0'),
+        ('n_d', 'n_i0'),
+        ('T_i', 'v_ti'),
+        ('T_i', 'debye_Di'),
+        ('n_i0', 'debye_Di'),
+        ('T_e', 'debye_De'),
+        ('n_e0', 'debye_De'),
+        ('debye_De', 'debye_D'),
+        ('debye_Di', 'debye_D'),
+        ('v_ti', 'roh_0'),
+        ('Z_d', 'roh_0'),
+        ('T_e', 'debye_nue'),
+        ('u_i', 'debye_nue'),
+        ('debye_De', 'debye_nue'),
+        ('T_n', 'T_i'),
+        ('T_n', 'v_ti'),
+        ('T_n', 'debye_nue'),
+        ('a', 'Z_d'),
+        ('a', 'roh_0'),
+        ('a', 'sigma_scatter'),
+        ('roh_0', 'sigma_scatter'),
+        ('roh_0', 'coulomb_logarithm'),
+        ('debye_nue', 'coulomb_logarithm'),
+        ('roh_0_nue', 'coulomb_logarithm'),
+        ('debye_nue', 'roh_0_nue'),
+        ('u_i', 'F_i'),
+        ('v_ti', 'F_i'),
+        ('n_i0', 'F_i'),
+        ('m_neon', 'F_i'),
+        ('m_argon', 'F_i'),
+        ('sigma_scatter', 'F_i'),
+        ('coulomb_logarithm', 'F_i'),
+        ('K', 'F_i'),
+        ('a', 'K'),
+        ('debye_nue', 'K'),
+        ('F_e', 'Z_d'),
+        ('E_0', 'F_e'),
+        ('Z_d', 'F_e')
+    ]
+
+    for src, dst in edges:
+        dot.edge(src, dst)
+
+    output_path = "/mnt/data/schwabe_ion_drag_force_graph"
+    dot.render(output_path, view=False)
+    return output_path + ".png"
+
+create_schwabe_ion_drag_graph()

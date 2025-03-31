@@ -1,0 +1,16 @@
+{
+    "pos": {
+        "E_multiplier": 0.9669812361649179,
+        "ne_multiplier": 0.9181241656462893,
+        "Te_multiplier": 0.8743014137682356,
+        "z_multiplier": 1.3036330945204189,
+        "error": 54.13097307687595
+    },
+    "neg": {
+        "E_multiplier": 1.1679699110180615,
+        "ne_multiplier": 1.02,
+        "Te_multiplier": 1.02,
+        "z_multiplier": 1.5,
+        "error": 54.23555749962324
+    }
+}

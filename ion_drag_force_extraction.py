@@ -87,41 +87,8 @@ def e_field(x, I):
     return poly1d_fn(x)
 
 
-def function_all(gas_type, I, polarity):
+def solve_fb_equation(gas_type, I, polarity, E_multiplier, ne_multiplier, T_e_multiplier, z_multiplier):
     
-    if gas_type == "Argon" and I == 1.5 and polarity == "neg":
-        E_multiplier = 1.
-        ne_multiplier = .6
-        T_e_multiplier = 1.1
-    elif gas_type == "Argon" and I == 1.5 and polarity == "pos":
-        E_multiplier = .8
-        ne_multiplier = .6
-        T_e_multiplier = 1.1
-    elif gas_type == "Argon" and I == 1 and polarity == "pos":
-        E_multiplier = 0.95
-        ne_multiplier = .8
-        T_e_multiplier = 1.3
-    elif gas_type == "Argon" and I == 1 and polarity == "neg":
-        E_multiplier = 0.95
-        ne_multiplier = .8
-        T_e_multiplier = 1.3
-    elif gas_type == "Neon" and I == 1 and polarity == "pos":
-        E_multiplier = .9
-        ne_multiplier = 1
-        T_e_multiplier = .85
-    elif gas_type == "Neon" and I == 1 and polarity == "neg":
-        E_multiplier = 1.2
-        ne_multiplier = 1
-        T_e_multiplier = 1
-    elif gas_type == "Neon" and I == 1.5 and polarity == "pos":
-        E_multiplier = 1.1
-        ne_multiplier = .7
-        T_e_multiplier = .8
-    else:
-        E_multiplier = 1.1
-        ne_multiplier = .7
-        T_e_multiplier = 0.8
-        
     charge_depletion = 1
     T_e_argon_neon_translation = 0.45
     selected_current = str(I)+"mA"
@@ -152,12 +119,12 @@ def function_all(gas_type, I, polarity):
     exp_error = np.array(sorted_exp_error)
     
     ref_p = [12,    15,    18,   20,   23,   30,   40,   50,  60,  70,  80,  90, 100, 110, 120]
-    z_neon = [0.37, 0.37, 0.37, 0.36, 0.36, 0.33, .31, .29, .26, .26, .26, .26, .26, .26, .3]
+    z_neon = np.array([0.37, 0.37, 0.37, 0.36, 0.36, 0.33, .31, .29, .26, .26, .26, .26, .26, .26, .3]) * z_multiplier
     #z_neon = [0.3] * len(z_neon)
     # ref_p = [12,   15, 18,   20,  23, 30, 40, 50, 60, 70, 80,  90, 100, 110, 120]
-    z_argon = [.66, .59, .56, .52, .47, .4, .4, .4, .4, .4, .4, .37, .36, .34, .32] 
-    ref_n_d = np.array([0.06, 0.06, 0.06, 0.07, 0.09, 0.1, 0.1, 0.2, 0.3, 0.4, .5, .6, .7, .8, .8]) * 10**11 
-
+    z_argon = np.array([.66, .59, .56, .52, .47, .4, .4, .4, .4, .4, .4, .37, .36, .34, .32]) * z_multiplier
+    ref_n_d = np.array([0.06, 0.06, 0.06, 0.07, 0.09, 0.1, 0.1, 0.2, 0.3, 0.4, .4, .4, .6, .7, .8]) * 10**11 
+    
     if gas_type == "Neon":
         z = []
         for i in p:
@@ -192,13 +159,19 @@ def function_all(gas_type, I, polarity):
     E_0 = np.multiply(E_0_calc, -100*E_multiplier)  # V/m
     n_e0 = np.multiply(n_e0,  ne_multiplier * 10**14)
     #
+    if gas_type == "Argon":
+        T_e_argon = T_e * T_e_multiplier * T_e_argon_neon_translation
+        E_0_argon = E_0
+    else:
+        T_e = T_e * T_e_multiplier
+
     T_n = 0.025  # eV
     if gas_type == "Neon":
         l_i = np.divide(T_n  * eV_K * k, p * sigma_neon)
-        T_i = (np.multiply(2 / 9 * np.abs(np.multiply(E_0, 1)) * e / k, l_i) + 0.025 * eV_K)
+        T_i = (2 / 9 * np.abs(E_0) * e / k * l_i) + 0.025 * eV_K
     else:
         l_i = np.divide(T_n  * eV_K * k, p * sigma_argon)
-        T_i = (np.multiply(2 / 9 * np.abs(np.multiply(E_0_argon, 1)) * e / k, l_i) + 0.025 * eV_K)
+        T_i = (2 / 9 * np.abs(E_0_argon) * e / k * l_i) + 0.025 * eV_K
     n_0 = p / (k * T_n * eV_K) * 10**(-6)  # cm^-3
     
     # Other Equations
@@ -272,6 +245,8 @@ def function_all(gas_type, I, polarity):
         v_ti2 = np.sqrt(k * T_i / m_argon)
         u_i = M*v_ti2
     
+ 
+    
     if gas_type == "Neon":
         F_e = Z_d * e * E_0
         factor = np.multiply(epstein, (4 / 3) * np.pi * a**2 * m_neon * v_tn * (p / (T_n * eV_K * k)))
@@ -335,15 +310,11 @@ def function_all(gas_type, I, polarity):
     # Save the updated data back to the JSON file
     with open(filepath, "w") as json_file:
         json.dump(existing_data, json_file, indent=4)
-    print(f"Saved data for {gas_type}, {I}mA, {polarity}")
     
     if gas_type == "Argon" and polarity == "pos":
         store_plasma_data(ref_p, n_e0_argon, T_e_argon, E_0_argon, I_var2)
-        print(f"Saved plasma data for {gas_type}, {I}mA")
     elif gas_type == "Neon" and polarity == "pos":
         store_plasma_data(ref_p, n_e0, T_e, E_0, I_var2)
-        print(f"Saved plasma data for {gas_type}, {I}mA")
-
 def store_plasma_data(ref_p, n_e, T_e, E_0, current, file_name = "argon_interpolation/exp_argon_params.json"):
 
     # Prepare data to store
@@ -370,14 +341,3 @@ def store_plasma_data(ref_p, n_e, T_e, E_0, current, file_name = "argon_interpol
     # Save the updated data to the JSON file
     with open(file_name, "w") as file:
         json.dump(data, file, indent=4)
-    print(f"Data for {current} successfully stored in {file_name}.")
-
-# Possible values for each variable
-gas_types = ["Argon", "Neon"]
-currents = [1, 1.5]
-polarities = ["pos", "neg"]
-# Iterate over all combinations
-for gas_type in gas_types:
-    for I in currents:
-        for polarity in polarities:
-            function_all(gas_type, I, polarity)
