@@ -169,7 +169,7 @@ plt.show()
 # F_i measured
 # =============================================================================
 
-gas_type = "Argon"
+gas_type = "Neon"
 current = "1p5mA"
 
 file_paths_fi = [
